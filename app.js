@@ -17,6 +17,12 @@
     for (var i = 0; i < ROSTER.length; i++) if (ROSTER[i].slug === slug) return ROSTER[i];
     return null;
   }
+  /* Split a roster tool ("Front / Back") into its individual sides. */
+  function toolSides(r, language) {
+    var s = (language === "de" ? r.toolDe : r.toolEn) || "";
+    return s.split(" / ").map(function (x) { return x.trim(); })
+      .filter(function (x) { return x.length > 0; });
+  }
 
   // ---- State ---------------------------------------------------------------
   var logs = {};        // id -> log object
@@ -330,6 +336,26 @@
     return field;
   }
 
+  /* When the UI language changes, re-derive roster-based name and tool-side
+     values so they follow the new language (across all logs). The tool is
+     matched by side index so the chosen front/back side is preserved. */
+  function relabelForLanguage(newLang) {
+    Object.keys(logs).forEach(function (id) {
+      var l = logs[id];
+      if (!l || !Array.isArray(l.characters)) return;
+      l.characters.forEach(function (c) {
+        if (!c) return;
+        var r = rosterBySlug(c.characterSlug);
+        if (!r) return;
+        var oldSides = toolSides(r, lang);
+        var newSides = toolSides(r, newLang);
+        var i = oldSides.indexOf(c.tool);
+        if (i !== -1 && newSides[i]) c.tool = newSides[i];
+        c.name = newLang === "de" ? r.nameDe : r.nameEn;
+      });
+    });
+  }
+
   function renderCharacters() {
     var wrap = document.getElementById("characters");
     wrap.innerHTML = "";
@@ -341,7 +367,7 @@
       title.textContent = d.character + " " + (idx + 1);
       card.appendChild(title);
 
-      // --- Character picker: fills Name + Character Tool from the roster ---
+      // --- Character picker (this IS the character's name/identity) ---
       var pickField = el("div", "field");
       var pickLabel = el("label");
       pickLabel.textContent = d.pickCharacter;
@@ -369,33 +395,51 @@
       pickField.appendChild(select);
       card.appendChild(pickField);
 
-      // --- Name + Character Tool (editable text; auto-filled by the picker) ---
-      var nameField = el("div", "field");
-      var nameLabel = el("label");
-      nameLabel.textContent = d.name;
-      var nameInput = el("input", null, { type: "text", "data-char": idx, "data-key": "name" });
-      nameInput.value = ch.name;
-      nameInput.placeholder = d.namePlaceholder;
-      nameField.appendChild(nameLabel);
-      nameField.appendChild(nameInput);
-      card.appendChild(nameField);
-
+      // --- Character Tool picker: the chosen character's tool, front/back
+      //     offered as separate options ---
       var toolField = el("div", "field");
       var toolLabel = el("label");
       toolLabel.textContent = d.tool;
-      var toolInput = el("input", null, { type: "text", "data-char": idx, "data-key": "tool" });
-      toolInput.value = ch.tool;
-      toolInput.placeholder = d.toolPlaceholder;
-      toolInput.addEventListener("input", function () {
-        activeLog().characters[idx].tool = toolInput.value;
-        scheduleSave();
-      });
+      var toolSelect = el("select", "char-select tool-select", { "data-char": idx });
       var note = el("div", "tool-note");
       note.hidden = true;
       toolField.appendChild(toolLabel);
-      toolField.appendChild(toolInput);
+      toolField.appendChild(toolSelect);
       toolField.appendChild(note);
       card.appendChild(toolField);
+
+      // Rebuild the tool options for the currently selected character.
+      function refreshToolOptions() {
+        toolSelect.innerHTML = "";
+        var c = activeLog().characters[idx];
+        var r = rosterBySlug(c.characterSlug);
+        if (!r) {
+          var ph = el("option");
+          ph.value = "";
+          ph.textContent = d.pickToolPlaceholder;
+          toolSelect.appendChild(ph);
+          toolSelect.value = "";
+          toolSelect.disabled = true;
+          return;
+        }
+        toolSelect.disabled = false;
+        var sides = toolSides(r, lang);
+        sides.forEach(function (side) {
+          var opt = el("option");
+          opt.value = side;
+          opt.textContent = side;
+          toolSelect.appendChild(opt);
+        });
+        // Keep any pre-existing custom/legacy value visible.
+        if (c.tool && sides.indexOf(c.tool) === -1) {
+          var extra = el("option");
+          extra.value = c.tool;
+          extra.textContent = c.tool;
+          toolSelect.appendChild(extra);
+        }
+        toolSelect.value = c.tool || sides[0] || "";
+        if (!c.tool) c.tool = toolSelect.value; // default to front side
+      }
 
       // Show a hint when the German tool name is an unofficial translation.
       function updateNote() {
@@ -405,12 +449,8 @@
         note.hidden = !provisional;
       }
 
-      // Typing a custom name clears the roster selection.
-      nameInput.addEventListener("input", function () {
-        activeLog().characters[idx].name = nameInput.value;
-        activeLog().characters[idx].characterSlug = "";
-        select.value = "";
-        updateNote();
+      toolSelect.addEventListener("change", function () {
+        activeLog().characters[idx].tool = toolSelect.value;
         scheduleSave();
       });
 
@@ -420,13 +460,16 @@
         var r = rosterBySlug(select.value);
         if (r) {
           c.name = lang === "de" ? r.nameDe : r.nameEn;
-          c.tool = lang === "de" ? r.toolDe : r.toolEn;
-          nameInput.value = c.name;
-          toolInput.value = c.tool;
+          c.tool = (toolSides(r, lang)[0] || ""); // default to front side
+        } else {
+          c.name = "";
+          c.tool = "";
         }
+        refreshToolOptions();
         updateNote();
         scheduleSave();
       });
+      refreshToolOptions();
       updateNote();
 
       // Story Allies: dynamic list of names with add/remove.
@@ -574,7 +617,9 @@
     document.getElementById("btn-share").addEventListener("click", shareLink);
 
     document.getElementById("btn-lang").addEventListener("click", function () {
-      lang = lang === "de" ? "en" : "de";
+      var newLang = lang === "de" ? "en" : "de";
+      relabelForLanguage(newLang);
+      lang = newLang;
       saveStorage();
       renderAll();
     });
