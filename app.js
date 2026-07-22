@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  var SCHEMA_VERSION = 1;
+  var SCHEMA_VERSION = 2;
   var TRACK_MAX = 15;
   var TRACK_KEYS = ["startingResources", "followers", "nubiconWatchesYou"];
   var STORE_LOGS = "neonhope:logs";
@@ -42,6 +42,18 @@
 
   function tr() { return window.t(lang); }
 
+  /* Normalise the "Story Allies" value into a clean array of names.
+     Accepts either an array (current model) or a string (legacy / free text). */
+  function coerceAllies(v) {
+    var arr = [];
+    if (Array.isArray(v)) arr = v;
+    else if (typeof v === "string") arr = v.split(/\r?\n/);
+    return arr
+      .map(function (x) { return typeof x === "string" ? x : String(x); })
+      .map(function (x) { return x.trim(); })
+      .filter(function (x) { return x.length > 0; });
+  }
+
   function emptyLog(title) {
     return {
       schemaVersion: SCHEMA_VERSION,
@@ -50,10 +62,10 @@
       createdAt: nowISO(),
       updatedAt: nowISO(),
       characters: [
-        { name: "", tool: "", allies: "" },
-        { name: "", tool: "", allies: "" },
-        { name: "", tool: "", allies: "" },
-        { name: "", tool: "", allies: "" },
+        { name: "", tool: "", allies: [] },
+        { name: "", tool: "", allies: [] },
+        { name: "", tool: "", allies: [] },
+        { name: "", tool: "", allies: [] },
       ],
       tracks: { startingResources: 0, followers: 0, nubiconWatchesYou: 0 },
       campaignNotes: "",
@@ -64,7 +76,8 @@
   /* Coerce arbitrary parsed JSON into a valid log; returns null if unusable. */
   function normalizeLog(obj) {
     if (!obj || typeof obj !== "object") return null;
-    if (obj.schemaVersion !== SCHEMA_VERSION) return null;
+    // Accept any known schema version; older ones are migrated below.
+    if (obj.schemaVersion !== 1 && obj.schemaVersion !== 2) return null;
     var base = emptyLog();
     var log = {
       schemaVersion: SCHEMA_VERSION,
@@ -83,7 +96,7 @@
       log.characters.push({
         name: typeof c.name === "string" ? c.name : "",
         tool: typeof c.tool === "string" ? c.tool : "",
-        allies: typeof c.allies === "string" ? c.allies : "",
+        allies: coerceAllies(c.allies),
       });
     }
     TRACK_KEYS.forEach(function (k) {
@@ -103,6 +116,14 @@
       logs = raw ? JSON.parse(raw) : {};
     } catch (e) { logs = {}; }
     if (!logs || typeof logs !== "object") logs = {};
+    // Migrate stored logs to the current model (allies string -> array).
+    Object.keys(logs).forEach(function (id) {
+      var l = logs[id];
+      if (l && Array.isArray(l.characters)) {
+        l.characters.forEach(function (c) { if (c) c.allies = coerceAllies(c.allies); });
+        l.schemaVersion = SCHEMA_VERSION;
+      }
+    });
     activeId = localStorage.getItem(STORE_ACTIVE);
     lang = localStorage.getItem(STORE_LANG) ||
       ((navigator.language || "de").toLowerCase().indexOf("en") === 0 ? "en" : "de");
@@ -244,6 +265,59 @@
     });
   }
 
+  /* Build the "Story Allies" field: a list of name inputs with per-row
+     remove buttons and an add button. Only this list re-renders on
+     add/remove, so name/tool inputs keep their focus. */
+  function buildAlliesField(idx, d) {
+    var field = el("div", "field allies-field");
+    var label = el("label");
+    label.textContent = d.allies;
+    field.appendChild(label);
+
+    var list = el("div", "ally-list");
+
+    function draw() {
+      list.innerHTML = "";
+      var arr = activeLog().characters[idx].allies;
+      arr.forEach(function (val, ai) {
+        var row = el("div", "ally-row");
+        var input = el("input", null,
+          { type: "text", "data-char": idx, "data-ally": ai });
+        input.value = val;
+        input.placeholder = d.alliesPlaceholder;
+        input.addEventListener("input", function () {
+          activeLog().characters[idx].allies[ai] = input.value;
+          scheduleSave();
+        });
+        var remove = el("button", "ally-remove",
+          { type: "button", "aria-label": d.removeAlly, title: d.removeAlly });
+        remove.textContent = "×";
+        remove.addEventListener("click", function () {
+          activeLog().characters[idx].allies.splice(ai, 1);
+          scheduleSave();
+          draw();
+        });
+        row.appendChild(input);
+        row.appendChild(remove);
+        list.appendChild(row);
+      });
+    }
+    draw();
+    field.appendChild(list);
+
+    var add = el("button", "ally-add", { type: "button" });
+    add.textContent = d.addAlly;
+    add.addEventListener("click", function () {
+      activeLog().characters[idx].allies.push("");
+      scheduleSave();
+      draw();
+      var inputs = list.querySelectorAll("input");
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+    field.appendChild(add);
+    return field;
+  }
+
   function renderCharacters() {
     var wrap = document.getElementById("characters");
     wrap.innerHTML = "";
@@ -255,23 +329,25 @@
       title.textContent = d.character + " " + (idx + 1);
       card.appendChild(title);
 
-      [["name", "namePlaceholder"], ["tool", "toolPlaceholder"], ["allies", "alliesPlaceholder"]]
-        .forEach(function (pair) {
-          var key = pair[0];
-          var field = el("div", "field");
-          var label = el("label");
-          label.textContent = d[key];
-          var input = el("input", null, { type: "text", "data-char": idx, "data-key": key });
-          input.value = ch[key];
-          input.placeholder = d[pair[1]];
-          input.addEventListener("input", function () {
-            activeLog().characters[idx][key] = input.value;
-            scheduleSave();
-          });
-          field.appendChild(label);
-          field.appendChild(input);
-          card.appendChild(field);
+      [["name", "namePlaceholder"], ["tool", "toolPlaceholder"]].forEach(function (pair) {
+        var key = pair[0];
+        var field = el("div", "field");
+        var label = el("label");
+        label.textContent = d[key];
+        var input = el("input", null, { type: "text", "data-char": idx, "data-key": key });
+        input.value = ch[key];
+        input.placeholder = d[pair[1]];
+        input.addEventListener("input", function () {
+          activeLog().characters[idx][key] = input.value;
+          scheduleSave();
         });
+        field.appendChild(label);
+        field.appendChild(input);
+        card.appendChild(field);
+      });
+
+      // Story Allies: dynamic list of names with add/remove.
+      card.appendChild(buildAlliesField(idx, d));
       wrap.appendChild(card);
     });
   }

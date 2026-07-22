@@ -195,6 +195,44 @@ main {
 .field { display: flex; flex-direction: column; gap: 0.2rem; }
 .field label { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.03em; }
 
+/* Story allies: dynamic name list */
+.allies-field .ally-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.ally-row { display: flex; align-items: center; gap: 0.35rem; }
+.ally-row input { flex: 1 1 auto; min-width: 0; }
+.ally-remove {
+  flex: 0 0 auto;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.ally-remove:hover { color: var(--danger); border-color: var(--danger); }
+.ally-remove:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
+.ally-add {
+  margin-top: 0.4rem;
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--panel-border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 0.3rem 0.65rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.ally-add:hover { color: var(--accent); border-color: var(--accent); }
+.ally-add:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
+
 input[type="text"], textarea {
   width: 100%;
   background: var(--bg);

@@ -35,7 +35,9 @@
       // Placeholders
       namePlaceholder: "Name eingeben …",
       toolPlaceholder: "Vorteil eingeben …",
-      alliesPlaceholder: "Verbündete eingeben …",
+      alliesPlaceholder: "Name des/der Verbündeten …",
+      addAlly: "+ Verbündete/r",
+      removeAlly: "Verbündete/n entfernen",
       notesPlaceholder: "Notizen zur Kampagne …",
       modifierPlaceholder: "Änderungen an der Modifikatoren-Auswahl …",
       // Messages
@@ -79,7 +81,9 @@
       modifierPoolUpdates: "Modifier Pool Updates",
       namePlaceholder: "Enter name …",
       toolPlaceholder: "Enter tool …",
-      alliesPlaceholder: "Enter allies …",
+      alliesPlaceholder: "Ally name …",
+      addAlly: "+ Ally",
+      removeAlly: "Remove ally",
       notesPlaceholder: "Notes about the campaign …",
       modifierPlaceholder: "Changes to the modifier pool …",
       savedNotice: "Saved automatically",
