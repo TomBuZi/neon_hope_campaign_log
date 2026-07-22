@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Neon Hope – Kampagnen-Logbuch</title>
+    <meta
+      name="description"
+      content="Kampagnen-Logbuch für Neon Hope – A Better Humanity. Läuft komplett im Browser." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <h1 data-i18n="appTitle">Kampagnen-Logbuch</h1>
+        <p class="subtitle" data-i18n="appSubtitle">Neon Hope – Eine bessere Menschheit</p>
+      </div>
+
+      <div class="controls">
+        <label class="log-picker">
+          <span class="sr-only" data-i18n="logLabel">Log</span>
+          <select id="log-select" aria-label="Log"></select>
+        </label>
+        <button id="btn-new" type="button" class="btn" data-i18n="newLog">Neues Log</button>
+        <button id="btn-rename" type="button" class="btn btn-ghost" data-i18n="renameLog">Umbenennen</button>
+        <button id="btn-delete" type="button" class="btn btn-ghost" data-i18n="deleteLog">Löschen</button>
+        <span class="spacer"></span>
+        <button id="btn-export" type="button" class="btn btn-ghost" data-i18n="export">Exportieren</button>
+        <button id="btn-import" type="button" class="btn btn-ghost" data-i18n="import">Importieren</button>
+        <button id="btn-share" type="button" class="btn btn-accent" data-i18n="shareLink">Link teilen</button>
+        <button
+          id="btn-lang"
+          type="button"
+          class="btn btn-lang"
+          data-i18n="langSwitch"
+          data-i18n-title="langSwitchTitle">
+          EN
+        </button>
+        <input id="file-import" type="file" accept="application/json,.json" hidden />
+      </div>
+    </header>
+
+    <main id="app">
+      <!-- Characters -->
+      <section class="panel" aria-labelledby="h-characters">
+        <h2 id="h-characters" data-i18n="charactersHeading">Charaktere</h2>
+        <div id="characters" class="character-grid"></div>
+      </section>
+
+      <!-- Trackers -->
+      <section class="panel" aria-labelledby="h-tracks">
+        <h2 id="h-tracks" data-i18n="tracksHeading">Zähler</h2>
+        <p class="hint" data-i18n="trackHint"></p>
+        <div id="tracks" class="tracks"></div>
+      </section>
+
+      <!-- Free text -->
+      <section class="panel" aria-labelledby="h-notes">
+        <h2 id="h-notes" data-i18n="campaignNotes">Kampagnen-Notizen</h2>
+        <textarea
+          id="campaignNotes"
+          class="notes"
+          rows="8"
+          data-i18n-placeholder="notesPlaceholder"></textarea>
+      </section>
+
+      <section class="panel" aria-labelledby="h-mod">
+        <h2 id="h-mod" data-i18n="modifierPoolUpdates">Veränderungen der Modifikatoren-Auswahl</h2>
+        <textarea
+          id="modifierPoolUpdates"
+          class="notes"
+          rows="6"
+          data-i18n-placeholder="modifierPlaceholder"></textarea>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <footer class="footer">
+      <span data-i18n="savedNotice">Automatisch gespeichert</span>
+      <span class="dot">·</span>
+      <a href="https://downloads.neonhopegame.com" target="_blank" rel="noopener noreferrer"
+        >downloads.neonhopegame.com</a
+      >
+    </footer>
+
+    <script src="i18n.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

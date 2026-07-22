@@ -1,0 +1,105 @@
+/* Neon Hope Campaign Log – bilingual labels (DE/EN).
+   Loaded as a plain script (no ES module) so the app also works via file://. */
+(function (global) {
+  "use strict";
+
+  var I18N = {
+    de: {
+      lang: "de",
+      htmlLang: "de",
+      appTitle: "Kampagnen-Logbuch",
+      appSubtitle: "Neon Hope – Eine bessere Menschheit",
+      // Header controls
+      logLabel: "Log",
+      newLog: "Neues Log",
+      newLogTitle: "Neues Kampagnen-Log",
+      renameLog: "Umbenennen",
+      deleteLog: "Löschen",
+      export: "Exportieren",
+      import: "Importieren",
+      shareLink: "Link teilen",
+      langSwitch: "EN",
+      langSwitchTitle: "Switch to English",
+      // Sections
+      charactersHeading: "Charaktere",
+      character: "Charakter",
+      name: "Name",
+      tool: "Charakter-Vorteil",
+      allies: "Story Verbündete",
+      tracksHeading: "Zähler",
+      startingResources: "Start-Ressourcen",
+      followers: "Begleiter",
+      nubiconWatchesYou: "Nubicon beobachtet dich",
+      campaignNotes: "Kampagnen-Notizen",
+      modifierPoolUpdates: "Veränderungen der Modifikatoren-Auswahl",
+      // Placeholders
+      namePlaceholder: "Name eingeben …",
+      toolPlaceholder: "Vorteil eingeben …",
+      alliesPlaceholder: "Verbündete eingeben …",
+      notesPlaceholder: "Notizen zur Kampagne …",
+      modifierPlaceholder: "Änderungen an der Modifikatoren-Auswahl …",
+      // Messages
+      savedNotice: "Automatisch gespeichert",
+      linkCopied: "Link in die Zwischenablage kopiert",
+      linkCopyManual: "Kopieren fehlgeschlagen – Link manuell kopieren:",
+      importSuccess: "Log importiert",
+      importError: "Import fehlgeschlagen: keine gültige Log-Datei.",
+      loadFromLinkConfirm: "Ein geteiltes Log wurde in der URL gefunden. Jetzt laden?",
+      renamePrompt: "Neuer Name für dieses Log:",
+      deleteConfirm: "Dieses Log wirklich löschen? Das kann nicht rückgängig gemacht werden.",
+      lastEdited: "zuletzt bearbeitet",
+      untitled: "Unbenanntes Log",
+      trackHint: "Feld anklicken zum Setzen · aktives Feld erneut anklicken zum Verringern",
+    },
+    en: {
+      lang: "en",
+      htmlLang: "en",
+      appTitle: "Campaign Log",
+      appSubtitle: "Neon Hope – A Better Humanity",
+      logLabel: "Log",
+      newLog: "New log",
+      newLogTitle: "New campaign log",
+      renameLog: "Rename",
+      deleteLog: "Delete",
+      export: "Export",
+      import: "Import",
+      shareLink: "Share link",
+      langSwitch: "DE",
+      langSwitchTitle: "Auf Deutsch wechseln",
+      charactersHeading: "Characters",
+      character: "Character",
+      name: "Name",
+      tool: "Character Tool",
+      allies: "Story Allies",
+      tracksHeading: "Trackers",
+      startingResources: "Starting Resources",
+      followers: "Followers",
+      nubiconWatchesYou: "Nubicon Watches You",
+      campaignNotes: "Campaign Notes",
+      modifierPoolUpdates: "Modifier Pool Updates",
+      namePlaceholder: "Enter name …",
+      toolPlaceholder: "Enter tool …",
+      alliesPlaceholder: "Enter allies …",
+      notesPlaceholder: "Notes about the campaign …",
+      modifierPlaceholder: "Changes to the modifier pool …",
+      savedNotice: "Saved automatically",
+      linkCopied: "Link copied to clipboard",
+      linkCopyManual: "Copy failed – copy the link manually:",
+      importSuccess: "Log imported",
+      importError: "Import failed: not a valid log file.",
+      loadFromLinkConfirm: "A shared log was found in the URL. Load it now?",
+      renamePrompt: "New name for this log:",
+      deleteConfirm: "Really delete this log? This cannot be undone.",
+      lastEdited: "last edited",
+      untitled: "Untitled log",
+      trackHint: "Click a box to set · click the active box again to lower",
+    },
+  };
+
+  global.I18N = I18N;
+
+  /* Returns the dictionary for a language code, defaulting to DE. */
+  global.t = function (lang) {
+    return I18N[lang] || I18N.de;
+  };
+})(window);
