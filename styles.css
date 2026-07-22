@@ -250,6 +250,32 @@ input[type="text"]:focus, textarea:focus {
 }
 .notes { resize: vertical; min-height: 4rem; }
 
+/* Character picker */
+.char-select {
+  width: 100%;
+  appearance: none;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.5rem 2rem 0.5rem 0.6rem;
+  font: inherit;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 55%, calc(100% - 11px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.char-select:focus { outline: none; border-color: var(--accent); box-shadow: var(--glow); }
+.tool-note {
+  margin-top: 0.3rem;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--accent-2);
+}
+.tool-note::before { content: "ⓘ "; }
+
 /* ---------- Trackers ---------- */
 .tracks { display: grid; gap: 0.9rem; }
 .track-row {

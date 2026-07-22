@@ -13,6 +13,12 @@ Läuft komplett im Browser, ganz ohne Server, und ist auf **GitHub Pages** gehos
 - **Erfasst** die Felder des offiziellen Print-Logs: 4 Charaktere (Name, Charakter-Vorteil,
   Story Verbündete), die Zähler *Start-Ressourcen*, *Begleiter* und *Nubicon beobachtet dich*
   (je 0–15), *Kampagnen-Notizen* und *Veränderungen der Modifikatoren-Auswahl*.
+- **Charakter-Auswahl per Dropdown** – alle 12 spielbaren Charaktere (Grundspiel, alternative
+  Versionen und Erweiterung *A Hopeful Cause*). Die Auswahl füllt Name und Charakter-Vorteil
+  automatisch (beide bleiben editierbar). Charakter-Vorteile stammen von
+  [neonhopedb.com](https://neonhopedb.com); deutsche Tool-Namen sind für die vier
+  Grundspiel-Charaktere offiziell, für die übrigen acht eigene Übersetzungen (im UI markiert).
+- **Story Verbündete als Namensliste** mit Hinzufügen/Entfernen je Eintrag.
 - **Automatisches Speichern** im Browser (`localStorage`) – nichts verlässt dein Gerät.
 - **Mehrere Logs** parallel verwalten, umbenennen, löschen.
 - **Export / Import** als `.json`-Datei zur Sicherung oder Übertragung zwischen Geräten.

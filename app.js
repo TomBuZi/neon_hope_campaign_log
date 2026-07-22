@@ -11,6 +11,13 @@
   var STORE_ACTIVE = "neonhope:activeId";
   var STORE_LANG = "neonhope:lang";
 
+  // Character roster (from roster.js); empty fallback keeps the app usable.
+  var ROSTER = window.ROSTER || [];
+  function rosterBySlug(slug) {
+    for (var i = 0; i < ROSTER.length; i++) if (ROSTER[i].slug === slug) return ROSTER[i];
+    return null;
+  }
+
   // ---- State ---------------------------------------------------------------
   var logs = {};        // id -> log object
   var activeId = null;
@@ -62,10 +69,10 @@
       createdAt: nowISO(),
       updatedAt: nowISO(),
       characters: [
-        { name: "", tool: "", allies: [] },
-        { name: "", tool: "", allies: [] },
-        { name: "", tool: "", allies: [] },
-        { name: "", tool: "", allies: [] },
+        { name: "", tool: "", allies: [], characterSlug: "" },
+        { name: "", tool: "", allies: [], characterSlug: "" },
+        { name: "", tool: "", allies: [], characterSlug: "" },
+        { name: "", tool: "", allies: [], characterSlug: "" },
       ],
       tracks: { startingResources: 0, followers: 0, nubiconWatchesYou: 0 },
       campaignNotes: "",
@@ -97,6 +104,7 @@
         name: typeof c.name === "string" ? c.name : "",
         tool: typeof c.tool === "string" ? c.tool : "",
         allies: coerceAllies(c.allies),
+        characterSlug: typeof c.characterSlug === "string" ? c.characterSlug : "",
       });
     }
     TRACK_KEYS.forEach(function (k) {
@@ -120,7 +128,11 @@
     Object.keys(logs).forEach(function (id) {
       var l = logs[id];
       if (l && Array.isArray(l.characters)) {
-        l.characters.forEach(function (c) { if (c) c.allies = coerceAllies(c.allies); });
+        l.characters.forEach(function (c) {
+          if (!c) return;
+          c.allies = coerceAllies(c.allies);
+          if (typeof c.characterSlug !== "string") c.characterSlug = "";
+        });
         l.schemaVersion = SCHEMA_VERSION;
       }
     });
@@ -329,22 +341,93 @@
       title.textContent = d.character + " " + (idx + 1);
       card.appendChild(title);
 
-      [["name", "namePlaceholder"], ["tool", "toolPlaceholder"]].forEach(function (pair) {
-        var key = pair[0];
-        var field = el("div", "field");
-        var label = el("label");
-        label.textContent = d[key];
-        var input = el("input", null, { type: "text", "data-char": idx, "data-key": key });
-        input.value = ch[key];
-        input.placeholder = d[pair[1]];
-        input.addEventListener("input", function () {
-          activeLog().characters[idx][key] = input.value;
-          scheduleSave();
+      // --- Character picker: fills Name + Character Tool from the roster ---
+      var pickField = el("div", "field");
+      var pickLabel = el("label");
+      pickLabel.textContent = d.pickCharacter;
+      var select = el("select", "char-select");
+      var placeholder = el("option");
+      placeholder.value = "";
+      placeholder.textContent = d.pickCharacterPlaceholder;
+      select.appendChild(placeholder);
+      [["base", d.groupBase], ["alt", d.groupAlt], ["expansion", d.groupExpansion]]
+        .forEach(function (grp) {
+          var og = el("optgroup");
+          og.label = grp[1];
+          ROSTER.filter(function (r) { return r.group === grp[0]; }).forEach(function (r) {
+            var opt = el("option");
+            opt.value = r.slug;
+            var nm = lang === "de" ? r.nameDe : r.nameEn;
+            var sub = lang === "de" ? r.subtitleDe : r.subtitleEn;
+            opt.textContent = nm + " – " + sub;
+            og.appendChild(opt);
+          });
+          select.appendChild(og);
         });
-        field.appendChild(label);
-        field.appendChild(input);
-        card.appendChild(field);
+      select.value = ch.characterSlug || "";
+      pickField.appendChild(pickLabel);
+      pickField.appendChild(select);
+      card.appendChild(pickField);
+
+      // --- Name + Character Tool (editable text; auto-filled by the picker) ---
+      var nameField = el("div", "field");
+      var nameLabel = el("label");
+      nameLabel.textContent = d.name;
+      var nameInput = el("input", null, { type: "text", "data-char": idx, "data-key": "name" });
+      nameInput.value = ch.name;
+      nameInput.placeholder = d.namePlaceholder;
+      nameField.appendChild(nameLabel);
+      nameField.appendChild(nameInput);
+      card.appendChild(nameField);
+
+      var toolField = el("div", "field");
+      var toolLabel = el("label");
+      toolLabel.textContent = d.tool;
+      var toolInput = el("input", null, { type: "text", "data-char": idx, "data-key": "tool" });
+      toolInput.value = ch.tool;
+      toolInput.placeholder = d.toolPlaceholder;
+      toolInput.addEventListener("input", function () {
+        activeLog().characters[idx].tool = toolInput.value;
+        scheduleSave();
       });
+      var note = el("div", "tool-note");
+      note.hidden = true;
+      toolField.appendChild(toolLabel);
+      toolField.appendChild(toolInput);
+      toolField.appendChild(note);
+      card.appendChild(toolField);
+
+      // Show a hint when the German tool name is an unofficial translation.
+      function updateNote() {
+        var r = rosterBySlug(activeLog().characters[idx].characterSlug);
+        var provisional = r && lang === "de" && !r.toolDeOfficial;
+        note.textContent = provisional ? d.toolDeProvisional : "";
+        note.hidden = !provisional;
+      }
+
+      // Typing a custom name clears the roster selection.
+      nameInput.addEventListener("input", function () {
+        activeLog().characters[idx].name = nameInput.value;
+        activeLog().characters[idx].characterSlug = "";
+        select.value = "";
+        updateNote();
+        scheduleSave();
+      });
+
+      select.addEventListener("change", function () {
+        var c = activeLog().characters[idx];
+        c.characterSlug = select.value;
+        var r = rosterBySlug(select.value);
+        if (r) {
+          c.name = lang === "de" ? r.nameDe : r.nameEn;
+          c.tool = lang === "de" ? r.toolDe : r.toolEn;
+          nameInput.value = c.name;
+          toolInput.value = c.tool;
+        }
+        updateNote();
+        scheduleSave();
+      });
+      updateNote();
 
       // Story Allies: dynamic list of names with add/remove.
       card.appendChild(buildAlliesField(idx, d));
