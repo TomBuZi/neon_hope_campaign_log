@@ -51,14 +51,25 @@ python -m http.server 8000
 
 ## Aufbau
 
-| Datei         | Zweck                                                        |
-| ------------- | ------------------------------------------------------------ |
-| `index.html`  | Grundgerüst der Seite                                        |
-| `styles.css`  | Neon-Design, responsiv, hell/dunkel je nach System           |
-| `i18n.js`     | Deutsche und englische Beschriftungen                        |
-| `app.js`      | Zustand, Speichern/Laden, Zähler, Export/Import, Link teilen |
+| Datei         | Zweck                                                          |
+| ------------- | -------------------------------------------------------------- |
+| `index.html`  | Grundgerüst der Seite                                          |
+| `styles.css`  | Design, responsiv, hell/dunkel je nach System                  |
+| `i18n.js`     | Deutsche und englische Beschriftungen                          |
+| `roster.js`   | Charaktere und Charakter-Vorteile                              |
+| `app.js`      | Zustand, Speichern/Laden, Zähler, Export/Import, Link teilen   |
+| `fonts/`      | Selbst gehostete Schriften (woff2)                             |
 
 Die Print-PDFs (DE/EN) liegen als Referenz ebenfalls im Repository.
+
+## Design & Schriften
+
+Die Optik ist am offiziellen Auftritt [neonhopegame.com](https://neonhopegame.com/de/)
+angelehnt (heller Look, Solarpunk-Grün/Teal), passt sich per `prefers-color-scheme` an ein
+helles oder dunkles System-Theme an. Verwendete Schriften: **Red Hat Display** (Überschriften)
+und **Nunito Sans** (Text) – selbst gehostet unter `fonts/`, lizenziert unter der
+[SIL Open Font License 1.1](fonts/OFL.txt). Es werden weder das offizielle Logo noch Artworks
+verwendet; die Angleichung erfolgt nur über Farben und Typografie.
 
 ## Datenschutz
 

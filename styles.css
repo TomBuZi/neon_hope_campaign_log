@@ -1,46 +1,61 @@
-/* Neon Hope Campaign Log — neon-noir theme, theme-aware, responsive. */
+/* Neon Hope Campaign Log — styling aligned with neonhopegame.com:
+   light UI, solarpunk-green / teal accents, Red Hat Display (heavy italic)
+   headings + Nunito Sans body. Theme-aware (light default, branded dark). */
 
+/* ---------- Self-hosted fonts (OFL, see fonts/OFL.txt) ---------- */
+@font-face{font-family:"Red Hat Display";font-style:italic;font-weight:900;font-display:swap;src:url("fonts/RedHatDisplay-BlackItalic.latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:"Red Hat Display";font-style:italic;font-weight:900;font-display:swap;src:url("fonts/RedHatDisplay-BlackItalic.latinext.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:"Nunito Sans";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/NunitoSans-Regular.latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:"Nunito Sans";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/NunitoSans-Regular.latinext.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:"Nunito Sans";font-style:normal;font-weight:700;font-display:swap;src:url("fonts/NunitoSans-Bold.latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:"Nunito Sans";font-style:normal;font-weight:700;font-display:swap;src:url("fonts/NunitoSans-Bold.latinext.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+
+/* ---------- Design tokens ---------- */
 :root {
-  --bg: #0a0e17;
-  --bg-elev: #111726;
-  --bg-input: #0c1220;
-  --panel-border: #1e2b45;
-  --text: #e6edf7;
-  --text-dim: #8fa1bd;
-  --accent: #21e6c1;        /* neon teal */
-  --accent-2: #ff2fb9;      /* neon magenta */
-  --accent-3: #7c5cff;      /* neon violet */
-  --danger: #ff5470;
-  --glow: 0 0 12px rgba(33, 230, 193, 0.45);
-  --radius: 12px;
-  --font: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  --bg: #ffffff;
+  --bg-elev: #f4f4f5;
+  --bg-input: #ffffff;
+  --panel-border: #e4e4e7;
+  --text: #1f1f1f;
+  --text-dim: #71717a;
+  --accent: #4eb383;         /* brand green (accents, borders, fills) */
+  --accent-strong: #059669;  /* darker green (buttons, headings, values) */
+  --accent-2: #1b657e;       /* teal (links, secondary) */
+  --accent-3: #1b657e;       /* focus outline */
+  --danger: #dc2626;
+  --glow: 0 0 0 3px rgba(78, 179, 131, 0.30);   /* focus ring */
+  --radius: 8px;
+  --font: "Nunito Sans", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  --font-head: "Red Hat Display", Georgia, "Nunito Sans", system-ui, sans-serif;
 }
 
-/* Light theme for viewers who prefer it. */
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root {
-    --bg: #eef2f8;
-    --bg-elev: #ffffff;
-    --bg-input: #f6f8fc;
-    --panel-border: #d3dcec;
-    --text: #14203a;
-    --text-dim: #5a6b88;
-    --accent: #0aa891;
-    --accent-2: #d1218f;
-    --accent-3: #5a3ff0;
-    --danger: #d63a54;
-    --glow: 0 0 10px rgba(10, 168, 145, 0.25);
+    --bg: #0f1512;
+    --bg-elev: #172019;
+    --bg-input: #121a15;
+    --panel-border: #2a352e;
+    --text: #eef2ef;
+    --text-dim: #93a79b;
+    --accent: #5cc596;
+    --accent-strong: #2e9e6d;
+    --accent-2: #4bb0cc;
+    --accent-3: #5cc596;
+    --danger: #ff6b6b;
+    --glow: 0 0 0 3px rgba(92, 197, 150, 0.30);
   }
 }
-:root[data-theme="dark"] {
-  --bg: #0a0e17; --bg-elev: #111726; --bg-input: #0c1220; --panel-border: #1e2b45;
-  --text: #e6edf7; --text-dim: #8fa1bd; --accent: #21e6c1; --accent-2: #ff2fb9;
-  --accent-3: #7c5cff; --danger: #ff5470; --glow: 0 0 12px rgba(33, 230, 193, 0.45);
-}
 :root[data-theme="light"] {
-  --bg: #eef2f8; --bg-elev: #ffffff; --bg-input: #f6f8fc; --panel-border: #d3dcec;
-  --text: #14203a; --text-dim: #5a6b88; --accent: #0aa891; --accent-2: #d1218f;
-  --accent-3: #5a3ff0; --danger: #d63a54; --glow: 0 0 10px rgba(10, 168, 145, 0.25);
+  --bg: #ffffff; --bg-elev: #f4f4f5; --bg-input: #ffffff; --panel-border: #e4e4e7;
+  --text: #1f1f1f; --text-dim: #71717a; --accent: #4eb383; --accent-strong: #059669;
+  --accent-2: #1b657e; --accent-3: #1b657e; --danger: #dc2626;
+  --glow: 0 0 0 3px rgba(78, 179, 131, 0.30);
+}
+:root[data-theme="dark"] {
+  --bg: #0f1512; --bg-elev: #172019; --bg-input: #121a15; --panel-border: #2a352e;
+  --text: #eef2ef; --text-dim: #93a79b; --accent: #5cc596; --accent-strong: #2e9e6d;
+  --accent-2: #4bb0cc; --accent-3: #5cc596; --danger: #ff6b6b;
+  --glow: 0 0 0 3px rgba(92, 197, 150, 0.30);
 }
 
 * { box-sizing: border-box; }
@@ -50,24 +65,11 @@ body {
   font-family: var(--font);
   color: var(--text);
   background:
-    radial-gradient(1200px 600px at 100% -10%, rgba(124, 92, 255, 0.15), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(255, 47, 185, 0.12), transparent 55%),
+    radial-gradient(1200px 520px at 100% -20%, rgba(78, 179, 131, 0.07), transparent 60%),
     var(--bg);
   min-height: 100vh;
   line-height: 1.5;
 }
-
-.scanlines {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 3px);
-  z-index: 1;
-  opacity: 0.6;
-}
-@media (prefers-color-scheme: light) { .scanlines { display: none; } }
-:root[data-theme="light"] .scanlines { display: none; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -85,16 +87,17 @@ body {
   gap: 1rem;
   padding: 1.25rem clamp(1rem, 4vw, 2.5rem) 1rem;
   border-bottom: 1px solid var(--panel-border);
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.08), transparent);
+  background: linear-gradient(180deg, rgba(78, 179, 131, 0.06), transparent);
 }
 .brand h1 {
   margin: 0;
-  font-size: clamp(1.4rem, 3.5vw, 2rem);
-  letter-spacing: 0.04em;
-  color: var(--accent);
-  text-shadow: var(--glow);
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-style: italic;
+  font-size: clamp(1.5rem, 3.8vw, 2.2rem);
+  color: var(--accent-strong);
 }
-.subtitle { margin: 0.15rem 0 0; color: var(--text-dim); font-size: 0.9rem; letter-spacing: 0.02em; }
+.subtitle { margin: 0.2rem 0 0; color: var(--text-dim); font-size: 0.9rem; }
 
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .controls .spacer { flex: 1 1 0.5rem; min-width: 0; }
@@ -123,27 +126,29 @@ body {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
   padding: 0.5rem 0.9rem;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.05s;
 }
-.btn:hover { border-color: var(--accent); box-shadow: var(--glow); }
+.btn:hover { border-color: var(--accent); }
 .btn:active { transform: translateY(1px); }
 .btn:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 2px; }
 .btn-ghost { background: transparent; color: var(--text-dim); }
 .btn-ghost:hover { color: var(--text); }
 .btn-accent {
-  border-color: var(--accent);
-  color: #04140f;
-  background: linear-gradient(135deg, var(--accent), var(--accent-3));
-  font-weight: 600;
+  border-color: transparent;
+  color: #ffffff;
+  background: var(--accent-strong);
+  font-family: var(--font-head);
+  font-style: italic;
+  font-weight: 900;
 }
-.btn-accent:hover { box-shadow: 0 0 16px rgba(33, 230, 193, 0.6); }
-.btn-lang { min-width: 3rem; font-weight: 600; letter-spacing: 0.05em; }
+.btn-accent:hover { border-color: transparent; filter: brightness(0.93); }
+.btn-lang { min-width: 3rem; font-weight: 700; }
 
 /* ---------- Layout ---------- */
 main {
   position: relative;
   z-index: 2;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 3rem;
   display: grid;
@@ -155,15 +160,16 @@ main {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
   padding: 1.1rem 1.25rem 1.35rem;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .panel h2 {
   margin: 0 0 0.9rem;
-  font-size: 1.05rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--accent-2);
-  border-left: 3px solid var(--accent-2);
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--text);
+  border-left: 3px solid var(--accent);
   padding-left: 0.6rem;
 }
 .hint { margin: -0.4rem 0 0.9rem; color: var(--text-dim); font-size: 0.82rem; }
@@ -178,7 +184,7 @@ main {
 @media (max-width: 480px) { .character-grid { grid-template-columns: 1fr; } }
 
 .character-card {
-  background: var(--bg-input);
+  background: var(--bg);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
   padding: 0.75rem 0.8rem 0.85rem;
@@ -187,13 +193,14 @@ main {
   gap: 0.55rem;
 }
 .character-card .card-title {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent-3);
+  color: var(--text-dim);
+  font-weight: 700;
 }
 .field { display: flex; flex-direction: column; gap: 0.2rem; }
-.field label { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.03em; }
+.field label { font-size: 0.72rem; color: var(--text-dim); }
 
 /* Editable string lists (Story Allies, Campaign Notes, Modifier Updates) */
 .entry-list { display: flex; flex-direction: column; gap: 0.35rem; }
@@ -201,7 +208,7 @@ main {
   display: flex;
   align-items: flex-start;
   gap: 0.3rem;
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 .entry-row.dragging { opacity: 0.45; }
 .entry-row.drop-before { box-shadow: inset 0 2px 0 0 var(--accent); }
@@ -224,7 +231,7 @@ textarea.entry-input { resize: none; overflow: hidden; min-height: 2.6rem; }
   line-height: 1;
   border-radius: 6px;
 }
-.entry-drag:hover { color: var(--accent); }
+.entry-drag:hover { color: var(--accent-strong); }
 .entry-drag:active { cursor: grabbing; }
 
 .entry-remove {
@@ -251,7 +258,7 @@ textarea.entry-input { resize: none; overflow: hidden; min-height: 2.6rem; }
 body.dnd-allies .allies-field .entry-list:empty {
   min-height: 2.4rem;
   border: 1px dashed var(--panel-border);
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 body.dnd-allies .allies-field .entry-list:empty.drop-active {
   border-color: var(--accent);
@@ -263,24 +270,24 @@ body.dnd-allies .allies-field .entry-list:empty.drop-active {
   background: transparent;
   border: 1px dashed var(--panel-border);
   color: var(--text-dim);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0.3rem 0.65rem;
   font: inherit;
   font-size: 0.8rem;
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s;
 }
-.entry-add:hover { color: var(--accent); border-color: var(--accent); }
+.entry-add:hover { color: var(--accent-strong); border-color: var(--accent); }
 .entry-add:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
 .entry-add:disabled { opacity: 0.4; cursor: not-allowed; }
 .entry-add:disabled:hover { color: var(--text-dim); border-color: var(--panel-border); }
 
 input[type="text"], textarea {
   width: 100%;
-  background: var(--bg);
+  background: var(--bg-input);
   color: var(--text);
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.5rem 0.6rem;
   font: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -294,10 +301,10 @@ input[type="text"]:focus, textarea:focus {
 .char-select {
   width: 100%;
   appearance: none;
-  background: var(--bg);
+  background: var(--bg-input);
   color: var(--text);
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.5rem 2rem 0.5rem 0.6rem;
   font: inherit;
   cursor: pointer;
@@ -332,26 +339,25 @@ input[type="text"]:focus, textarea:focus {
   height: 26px;
   border: 1px solid var(--panel-border);
   border-radius: 6px;
-  background: var(--bg);
+  background: var(--bg-input);
   cursor: pointer;
   padding: 0;
-  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.05s;
+  transition: background 0.12s, border-color 0.12s, transform 0.05s;
 }
 .box:hover { border-color: var(--accent); }
 .box:active { transform: scale(0.92); }
 .box:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
 .box.filled {
-  background: linear-gradient(135deg, var(--accent), var(--accent-3));
+  background: var(--accent);
   border-color: var(--accent);
-  box-shadow: var(--glow);
 }
 .track-value {
   min-width: 2.6rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-size: 1.1rem;
-  color: var(--accent);
-  text-shadow: var(--glow);
+  font-weight: 700;
+  color: var(--accent-strong);
 }
 
 /* ---------- Toast + footer ---------- */
@@ -363,7 +369,7 @@ input[type="text"]:focus, textarea:focus {
   z-index: 5;
   background: var(--bg-elev);
   border: 1px solid var(--accent);
-  box-shadow: var(--glow);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
   color: var(--text);
   padding: 0.6rem 1.1rem;
   border-radius: 999px;
@@ -382,7 +388,7 @@ input[type="text"]:focus, textarea:focus {
   border-top: 1px solid var(--panel-border);
 }
 .footer .dot { margin: 0 0.5rem; }
-.footer a { color: var(--accent); text-decoration: none; }
+.footer a { color: var(--accent-2); text-decoration: none; }
 .footer a:hover { text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
