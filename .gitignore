@@ -1,6 +1,9 @@
 # Local Claude Code config
 .claude/
 
+# Exported campaign logs (user data, not source) — root-level JSON only
+/*.json
+
 # OS / editor cruft
 Thumbs.db
 .DS_Store
