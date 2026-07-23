@@ -425,7 +425,7 @@
      a list to reorder, or between lists of the same `group` when the target
      list's `canReceive()` allows it.
      cfg: { listId, group, getArray, placeholder, addLabel, removeLabel,
-            dragLabel, label?, multiline?, fieldClass?, canReceive? } */
+            dragLabel, label?, multiline?, fieldClass?, canReceive?, canAdd? } */
   function buildStringListField(cfg) {
     var field = el("div", "field " + (cfg.fieldClass || ""));
     if (cfg.label) {
@@ -443,7 +443,8 @@
       if (cfg.multiline) list.querySelectorAll("textarea").forEach(autoGrow);
     }
     function updateAddState() {
-      add.disabled = cfg.getArray().some(function (v) { return !String(v).trim(); });
+      var hasEmpty = cfg.getArray().some(function (v) { return !String(v).trim(); });
+      add.disabled = hasEmpty || (cfg.canAdd ? !cfg.canAdd() : false);
     }
 
     function draw() {
@@ -562,6 +563,7 @@
       multiline: false,
       getArray: function () { return activeLog().characters[idx].allies; },
       canReceive: function () { return !!activeLog().characters[idx].characterSlug; },
+      canAdd: function () { return !!activeLog().characters[idx].characterSlug; },
     });
   }
 
@@ -651,6 +653,9 @@
         var r = rosterBySlug(select.value);
         c.toolSlug = r ? r.tools[0].slug : ""; // default to front side
         refreshToolOptions();
+        // Re-evaluate the allies "add" button (enabled only when a character is set).
+        var allies = entryLists["allies-" + idx];
+        if (allies) allies.redraw();
         scheduleSave();
       });
       refreshToolOptions();
