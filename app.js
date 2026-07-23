@@ -164,6 +164,7 @@
     Object.keys(logs).forEach(function (id) {
       var l = logs[id];
       if (l && Array.isArray(l.characters)) {
+        if (typeof l.id !== "string" || !l.id) l.id = id; // legacy logs: key is the id
         l.characters = l.characters.slice(0, MAX_CHARACTERS).map(normalizeCharacter);
         if (l.characters.length === 0) l.characters.push(normalizeCharacter());
         l.campaignNotes = coerceEntries(l.campaignNotes);
@@ -275,8 +276,7 @@
       try {
         var log = normalizeLog(JSON.parse(reader.result));
         if (!log) throw new Error("invalid");
-        adoptLog(log);
-        showToast(tr().importSuccess);
+        importLog(log, false);
       } catch (e) {
         alert(tr().importError);
       }
@@ -284,13 +284,59 @@
     reader.readAsText(file);
   }
 
-  /* Add a log (from import or link) under a fresh id, make it active. */
-  function adoptLog(log) {
-    if (logs[log.id]) log.id = uuid(); // avoid clobbering an existing log
-    logs[log.id] = log;
-    activeId = log.id;
+  /* First existing log id whose (non-empty) title matches, or null. */
+  function findByTitle(title) {
+    var t = (title || "").trim();
+    if (!t) return null;
+    var ids = Object.keys(logs);
+    for (var i = 0; i < ids.length; i++) {
+      if (((logs[ids[i]].title || "").trim()) === t) return ids[i];
+    }
+    return null;
+  }
+
+  function finishImport(id, updated) {
+    activeId = id;
     saveStorage();
     renderAll();
+    showToast(updated ? tr().importUpdated : tr().importSuccess);
+  }
+
+  /* Import a log, recognising logs already present by GUID (update in place)
+     or, failing that, by identical name (ask whether it's the same log).
+     `askIfNew` gates a confirmation before adding a genuinely new log
+     (used for share links, where the import wasn't explicitly chosen). */
+  function importLog(incoming, askIfNew) {
+    if (!incoming) return;
+    if (typeof incoming.id !== "string" || !incoming.id) incoming.id = uuid();
+
+    // 1) Same GUID already present -> update that log.
+    if (logs[incoming.id]) {
+      var ex = logs[incoming.id];
+      if (!window.confirm(tr().importUpdateGuidConfirm.replace("%s", ex.title || incoming.title || ""))) return;
+      logs[incoming.id] = incoming;
+      finishImport(incoming.id, true);
+      return;
+    }
+
+    // 2) Same name (different/legacy GUID) -> ask if it's the same log.
+    var nameId = findByTitle(incoming.title);
+    if (nameId) {
+      if (window.confirm(tr().importSameNameConfirm.replace("%s", incoming.title))) {
+        delete logs[nameId];                       // replace it, adopting the incoming GUID
+        if (logs[incoming.id]) incoming.id = uuid(); // guard against a collision
+        logs[incoming.id] = incoming;
+        finishImport(incoming.id, true);
+        return;
+      }
+      // else fall through and add as a new log
+    }
+
+    // 3) New log.
+    if (askIfNew && !window.confirm(tr().loadFromLinkConfirm)) return;
+    if (logs[incoming.id]) incoming.id = uuid();
+    logs[incoming.id] = incoming;
+    finishImport(incoming.id, false);
   }
 
   // ---- Rendering -----------------------------------------------------------
@@ -952,15 +998,13 @@
     loadStorage();
     applyTheme();
 
-    // A shared log in the URL fragment takes precedence (with confirmation).
+    // A shared log in the URL fragment: update it if already present (by GUID
+    // or name), otherwise import as new (after confirmation).
     var m = location.hash.match(/(?:^#|[#&])log=([^&]+)/);
     if (m) {
       try {
         var shared = await decodeLog(decodeURIComponent(m[1]));
-        if (shared && window.confirm(tr().loadFromLinkConfirm)) {
-          if (Object.keys(logs).length === 0) { logs[shared.id] = shared; activeId = shared.id; saveStorage(); }
-          else adoptLog(shared);
-        }
+        if (shared) importLog(shared, true);
       } catch (e) { /* malformed link — ignore */ }
       history.replaceState(null, "", location.pathname + location.search);
     }

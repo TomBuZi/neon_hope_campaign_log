@@ -37,6 +37,11 @@ Läuft komplett im Browser, ganz ohne Server, und ist auf **GitHub Pages** gehos
 - **Link teilen** – der komplette Log-Zustand wird komprimiert in einen Link kodiert.
   Diesen Link kannst du dir selbst (z. B. per E-Mail) schicken, als Lesezeichen speichern
   oder an Mitspielende weitergeben; beim Öffnen wird das Log geladen.
+- **Import erkennt vorhandene Logs** – jedes Log trägt eine GUID. Importierst du (per Link
+  oder Datei) ein Log, das du anhand der GUID bereits hast, wird es *aktualisiert* statt
+  doppelt angelegt. Stimmt nur der Name überein, fragt die App, ob es dasselbe Log ist
+  (dann aktualisieren) oder ein neues (dann anlegen). Ältere Logs ohne GUID werden weiterhin
+  gelesen und bekommen eine zugewiesen.
 
 ## Speicher-Konzept
 
