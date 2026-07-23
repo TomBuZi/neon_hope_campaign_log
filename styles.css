@@ -322,6 +322,14 @@ input[type="text"]:focus, textarea:focus {
 }
 .char-select:focus { outline: none; border-color: var(--accent); box-shadow: var(--glow); }
 .char-select:disabled { opacity: 0.5; cursor: not-allowed; }
+.char-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  padding-left: 0.1rem;
+  min-height: 0.9rem;
+  line-height: 1.25;
+}
+.char-subtitle:empty { min-height: 0; }
 
 /* ---------- Trackers ---------- */
 .tracks { display: grid; gap: 0.9rem; }

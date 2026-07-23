@@ -616,9 +616,28 @@
         });
       select.value = ch.characterSlug || "";
       selects.push(select);
+      var charSub = el("div", "char-subtitle");
       pickField.appendChild(pickLabel);
       pickField.appendChild(select);
+      pickField.appendChild(charSub);
       card.appendChild(pickField);
+
+      // Collapsed box shows only the name of the chosen character; other
+      // options keep "Name – Subtitle" for picking, and the chosen one's
+      // subtitle is shown on its own line below the box.
+      function updateCharDisplay() {
+        var slug = select.value;
+        select.querySelectorAll("option").forEach(function (opt) {
+          var r = opt.value && rosterBySlug(opt.value);
+          if (!r) return;
+          var nm = lang === "de" ? r.nameDe : r.nameEn;
+          var sub = lang === "de" ? r.subtitleDe : r.subtitleEn;
+          opt.textContent = opt.value === slug ? nm : nm + " – " + sub;
+        });
+        var cur = slug && rosterBySlug(slug);
+        charSub.textContent = cur ? (lang === "de" ? cur.subtitleDe : cur.subtitleEn) : "";
+      }
+      updateCharDisplay();
 
       // --- Character Tool picker: the chosen character's tool, front/back
       //     offered as separate options ---
@@ -667,6 +686,7 @@
         var r = rosterBySlug(select.value);
         c.toolSlug = r ? r.tools[0].slug : ""; // default to front side
         refreshToolOptions();
+        updateCharDisplay();    // collapse box to name only + show subtitle below
         syncCharacterOptions(); // update which options are taken in sibling pickers
         // Re-evaluate the allies "add" button (enabled only when a character is set).
         var allies = entryLists["allies-" + idx];
