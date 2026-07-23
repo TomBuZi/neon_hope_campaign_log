@@ -10,9 +10,14 @@ Läuft komplett im Browser, ganz ohne Server, und ist auf **GitHub Pages** gehos
 ## Features
 
 - **Zweisprachig DE/EN** – Umschalter oben rechts.
-- **Erfasst** die Felder des offiziellen Print-Logs: 4 Charaktere (Charakter, Charakter-Vorteil,
+- **Erfasst** die Felder des offiziellen Print-Logs: Charaktere (Charakter, Charakter-Vorteil,
   Story Verbündete), die Zähler *Start-Ressourcen*, *Begleiter* und *Nubicon beobachtet dich*
   (je 0–15), *Kampagnen-Notizen* und *Veränderungen der Modifikatoren-Auswahl*.
+- **Charaktere hinzufügen/entfernen** – ein neues Log startet mit einem Charakter; über den
+  Button neben der Überschrift „Charaktere" kommen weitere hinzu (max. 4). Ein Charakter lässt
+  sich nur entfernen, wenn ihm keine Verbündeten zugeordnet sind, und der letzte Charakter
+  bleibt immer bestehen. Entfernen (Charaktere, Verbündete, Notizen, Änderungen) fragt vorher
+  nach.
 - **Charakter per Dropdown** – Auswahl aus allen 12 spielbaren Charakteren (Grundspiel,
   alternative Versionen und Erweiterung *A Hopeful Cause*). Der zugehörige **Charakter-Vorteil**
   wird als zweites Dropdown angeboten, wobei Vorder- und Rückseite des doppelseitigen Vorteils

@@ -4,8 +4,9 @@
 (function () {
   "use strict";
 
-  var SCHEMA_VERSION = 4;
+  var SCHEMA_VERSION = 5;
   var TRACK_MAX = 15;
+  var MAX_CHARACTERS = 4;
   var TRACK_KEYS = ["startingResources", "followers", "nubiconWatchesYou"];
   var STORE_LOGS = "neonhope:logs";
   var STORE_ACTIVE = "neonhope:activeId";
@@ -111,12 +112,7 @@
       title: title || tr().newLogTitle,
       createdAt: nowISO(),
       updatedAt: nowISO(),
-      characters: [
-        { characterSlug: "", toolSlug: "", allies: [] },
-        { characterSlug: "", toolSlug: "", allies: [] },
-        { characterSlug: "", toolSlug: "", allies: [] },
-        { characterSlug: "", toolSlug: "", allies: [] },
-      ],
+      characters: [{ characterSlug: "", toolSlug: "", allies: [] }], // new logs start with one
       tracks: { startingResources: 0, followers: 0, nubiconWatchesYou: 0 },
       campaignNotes: [],
       modifierPoolUpdates: [],
@@ -127,7 +123,7 @@
   function normalizeLog(obj) {
     if (!obj || typeof obj !== "object") return null;
     // Accept any known schema version; older ones are migrated below.
-    if ([1, 2, 3, 4].indexOf(obj.schemaVersion) === -1) return null;
+    if ([1, 2, 3, 4, 5].indexOf(obj.schemaVersion) === -1) return null;
     var base = emptyLog();
     var log = {
       schemaVersion: SCHEMA_VERSION,
@@ -140,8 +136,11 @@
       campaignNotes: coerceEntries(obj.campaignNotes),
       modifierPoolUpdates: coerceEntries(obj.modifierPoolUpdates),
     };
-    for (var i = 0; i < 4; i++) {
-      log.characters.push(normalizeCharacter(obj.characters && obj.characters[i]));
+    // Keep the provided characters (1..MAX_CHARACTERS), defaulting to one.
+    var srcChars = Array.isArray(obj.characters) ? obj.characters : [];
+    var count = Math.min(MAX_CHARACTERS, Math.max(1, srcChars.length || 1));
+    for (var i = 0; i < count; i++) {
+      log.characters.push(normalizeCharacter(srcChars[i]));
     }
     TRACK_KEYS.forEach(function (k) {
       var v = obj.tracks ? Number(obj.tracks[k]) : 0;
@@ -165,7 +164,8 @@
     Object.keys(logs).forEach(function (id) {
       var l = logs[id];
       if (l && Array.isArray(l.characters)) {
-        l.characters = l.characters.map(normalizeCharacter);
+        l.characters = l.characters.slice(0, MAX_CHARACTERS).map(normalizeCharacter);
+        if (l.characters.length === 0) l.characters.push(normalizeCharacter());
         l.campaignNotes = coerceEntries(l.campaignNotes);
         l.modifierPoolUpdates = coerceEntries(l.modifierPoolUpdates);
         l.schemaVersion = SCHEMA_VERSION;
@@ -495,6 +495,7 @@
           cfg.getArray()[i] = input.value;
           if (cfg.multiline) autoGrow(input);
           updateAddState();
+          if (cfg.onChange) cfg.onChange();
           scheduleSave();
         });
         input.addEventListener("blur", function () {
@@ -510,7 +511,11 @@
           { type: "button", "aria-label": cfg.removeLabel, title: cfg.removeLabel });
         remove.textContent = "×";
         remove.addEventListener("click", function () {
-          cfg.getArray().splice(i, 1);
+          var arr = cfg.getArray();
+          // Confirm only when there is actual content to lose.
+          if (i < arr.length && String(arr[i]).trim() && cfg.removeConfirm &&
+              !window.confirm(cfg.removeConfirm)) return;
+          arr.splice(i, 1);
           scheduleSave();
           draw();
         });
@@ -522,6 +527,7 @@
       });
 
       updateAddState();
+      if (cfg.onChange) cfg.onChange();
       sizeAll();
       if (cfg.multiline && typeof requestAnimationFrame === "function") {
         requestAnimationFrame(sizeAll);
@@ -550,7 +556,7 @@
 
   /* Story Allies field for one character (short single-line names).
      Droppable from another character's list only when this character is set. */
-  function buildAlliesField(idx, d) {
+  function buildAlliesField(idx, d, onChange) {
     return buildStringListField({
       listId: "allies-" + idx,
       group: "allies",
@@ -559,11 +565,13 @@
       placeholder: d.alliesPlaceholder,
       addLabel: d.addAlly,
       removeLabel: d.removeAlly,
+      removeConfirm: d.confirmRemoveEntry,
       dragLabel: d.dragReorder,
       multiline: false,
       getArray: function () { return activeLog().characters[idx].allies; },
       canReceive: function () { return !!activeLog().characters[idx].characterSlug; },
       canAdd: function () { return !!activeLog().characters[idx].characterSlug; },
+      onChange: onChange,
     });
   }
 
@@ -572,6 +580,10 @@
     wrap.innerHTML = "";
     var log = activeLog();
     var d = tr();
+    // Drop stale allies list registrations from a previous render/count.
+    Object.keys(entryLists).forEach(function (k) {
+      if (k.indexOf("allies-") === 0) delete entryLists[k];
+    });
     var selects = [];
     // Disable, in each picker, characters already chosen in another slot.
     function syncCharacterOptions() {
@@ -587,9 +599,34 @@
     }
     log.characters.forEach(function (ch, idx) {
       var card = el("div", "character-card");
+      var head = el("div", "card-head");
       var title = el("div", "card-title");
       title.textContent = d.character + " " + (idx + 1);
-      card.appendChild(title);
+      head.appendChild(title);
+
+      // Remove-character button: enabled only when this character has no
+      // (non-empty) allies and is not the last remaining character; confirms.
+      var del = el("button", "char-remove", { type: "button" });
+      del.textContent = "×";
+      del.setAttribute("aria-label", d.removeCharacter);
+      function refreshRemove() {
+        var c = activeLog().characters[idx];
+        if (!c) return;
+        var last = activeLog().characters.length <= 1;
+        var hasAllies = c.allies.some(function (a) { return String(a).trim(); });
+        del.disabled = last || hasAllies;
+        del.title = hasAllies ? d.removeCharacterBlocked : d.removeCharacter;
+      }
+      refreshRemove();
+      del.addEventListener("click", function () {
+        if (del.disabled) return;
+        if (!window.confirm(d.confirmRemoveCharacter)) return;
+        activeLog().characters.splice(idx, 1);
+        scheduleSave();
+        renderCharacters();
+      });
+      head.appendChild(del);
+      card.appendChild(head);
 
       // --- Character picker (this IS the character's name/identity) ---
       var pickField = el("div", "field");
@@ -696,10 +733,12 @@
       refreshToolOptions();
 
       // Story Allies: dynamic list of names with add/remove.
-      card.appendChild(buildAlliesField(idx, d));
+      card.appendChild(buildAlliesField(idx, d, refreshRemove));
       wrap.appendChild(card);
     });
     syncCharacterOptions();
+    var addChar = document.getElementById("btn-add-char");
+    if (addChar) addChar.disabled = log.characters.length >= MAX_CHARACTERS;
   }
 
   function renderTracks() {
@@ -753,6 +792,7 @@
       placeholder: d.notesPlaceholder,
       addLabel: d.addNote,
       removeLabel: d.removeNote,
+      removeConfirm: d.confirmRemoveEntry,
       dragLabel: d.dragReorder,
       multiline: true,
       getArray: function () { return activeLog().campaignNotes; },
@@ -765,6 +805,7 @@
       placeholder: d.modifierPlaceholder,
       addLabel: d.addModifier,
       removeLabel: d.removeModifier,
+      removeConfirm: d.confirmRemoveEntry,
       dragLabel: d.dragReorder,
       multiline: true,
       getArray: function () { return activeLog().modifierPoolUpdates; },
@@ -843,6 +884,14 @@
       activeId = log.id;
       saveStorage();
       renderAll();
+    });
+
+    document.getElementById("btn-add-char").addEventListener("click", function () {
+      var log = activeLog();
+      if (!log || log.characters.length >= MAX_CHARACTERS) return;
+      log.characters.push({ characterSlug: "", toolSlug: "", allies: [] });
+      scheduleSave();
+      renderCharacters();
     });
 
     document.getElementById("btn-rename").addEventListener("click", function () {

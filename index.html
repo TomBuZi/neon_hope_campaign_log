@@ -44,7 +44,12 @@
     <main id="app">
       <!-- Characters -->
       <section class="panel" aria-labelledby="h-characters">
-        <h2 id="h-characters" data-i18n="charactersHeading">Charaktere</h2>
+        <div class="panel-head">
+          <h2 id="h-characters" data-i18n="charactersHeading">Charaktere</h2>
+          <button id="btn-add-char" type="button" class="btn btn-add" data-i18n="addCharacter">
+            + Charakter
+          </button>
+        </div>
         <div id="characters" class="character-grid"></div>
       </section>
 
