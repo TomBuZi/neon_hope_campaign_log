@@ -426,11 +426,8 @@
       var toolLabel = el("label");
       toolLabel.textContent = d.tool;
       var toolSelect = el("select", "char-select tool-select", { "data-char": idx });
-      var note = el("div", "tool-note");
-      note.hidden = true;
       toolField.appendChild(toolLabel);
       toolField.appendChild(toolSelect);
-      toolField.appendChild(note);
       card.appendChild(toolField);
 
       // Rebuild the tool options (the chosen character's two tool sides).
@@ -459,14 +456,6 @@
         toolSelect.value = c.toolSlug;
       }
 
-      // Show a hint when the German tool name is an unofficial translation.
-      function updateNote() {
-        var r = rosterBySlug(activeLog().characters[idx].characterSlug);
-        var provisional = r && lang === "de" && !r.toolDeOfficial;
-        note.textContent = provisional ? d.toolDeProvisional : "";
-        note.hidden = !provisional;
-      }
-
       toolSelect.addEventListener("change", function () {
         activeLog().characters[idx].toolSlug = toolSelect.value;
         scheduleSave();
@@ -478,11 +467,9 @@
         var r = rosterBySlug(select.value);
         c.toolSlug = r ? r.tools[0].slug : ""; // default to front side
         refreshToolOptions();
-        updateNote();
         scheduleSave();
       });
       refreshToolOptions();
-      updateNote();
 
       // Story Allies: dynamic list of names with add/remove.
       card.appendChild(buildAlliesField(idx, d));

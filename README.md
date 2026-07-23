@@ -16,8 +16,9 @@ Läuft komplett im Browser, ganz ohne Server, und ist auf **GitHub Pages** gehos
 - **Charakter per Dropdown** – Auswahl aus allen 12 spielbaren Charakteren (Grundspiel,
   alternative Versionen und Erweiterung *A Hopeful Cause*). Der zugehörige **Charakter-Vorteil**
   wird als zweites Dropdown angeboten, wobei Vorder- und Rückseite des doppelseitigen Vorteils
-  einzeln wählbar sind. Charakter-Vorteile stammen von [neonhopedb.com](https://neonhopedb.com);
-  ein Teil der deutschen Namen ist offiziell, der Rest sind eigene Übersetzungen (im UI markiert).
+  einzeln wählbar sind. Englische Kartendaten stammen von
+  [neonhopedb.com](https://neonhopedb.com), die deutschen Namen aus der offiziellen deutschen
+  Ausgabe.
 - **Listen-Eingaben** für Story Verbündete, Kampagnen-Notizen und Veränderungen der
   Modifikatoren-Auswahl: einzelne Einträge werden explizit hinzugefügt und entfernt
   (Notizen/Änderungen mehrzeilig).
