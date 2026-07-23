@@ -62,6 +62,7 @@
       lastEdited: "zuletzt bearbeitet",
       untitled: "Unbenanntes Log",
       trackHint: "Feld anklicken zum Setzen · aktives Feld erneut anklicken zum Verringern",
+      disclaimer: "Alle Informationen zu Neon Hope auf dieser Seite – in Wort und Bild – sind urheberrechtlich geschützt durch die Hopeful Games UG (haftungsbeschränkt). Diese Website wird nicht von der Hopeful Games UG (haftungsbeschränkt) produziert, unterstützt, befürwortet oder ist mit ihr verbunden.",
     },
     en: {
       lang: "en",
@@ -117,6 +118,7 @@
       lastEdited: "last edited",
       untitled: "Untitled log",
       trackHint: "Click a box to set · click the active box again to lower",
+      disclaimer: "The information presented on this site about Neon Hope, both literal and graphical, is copyrighted by Hopeful Games UG (haftungsbeschränkt). This website is not produced, endorsed, supported, or affiliated with Hopeful Games UG (haftungsbeschränkt).",
     },
   };
 
