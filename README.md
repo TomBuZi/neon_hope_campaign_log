@@ -65,8 +65,10 @@ Die Print-PDFs (DE/EN) liegen als Referenz ebenfalls im Repository.
 ## Design & Schriften
 
 Die Optik ist am offiziellen Auftritt [neonhopegame.com](https://neonhopegame.com/de/)
-angelehnt (heller Look, Solarpunk-Grün/Teal), passt sich per `prefers-color-scheme` an ein
-helles oder dunkles System-Theme an. Verwendete Schriften: **Red Hat Display** (Überschriften)
+angelehnt (heller Look, Solarpunk-Grün/Teal). Standardmäßig folgt das Design per
+`prefers-color-scheme` dem System (hell/dunkel) und lässt sich zusätzlich über den
+Umschalter (🌙/☀️) oben rechts manuell festlegen; die Wahl wird im Browser gespeichert.
+Verwendete Schriften: **Red Hat Display** (Überschriften)
 und **Nunito Sans** (Text) – selbst gehostet unter `fonts/`, lizenziert unter der
 [SIL Open Font License 1.1](fonts/OFL.txt). Es werden weder das offizielle Logo noch Artworks
 verwendet; die Angleichung erfolgt nur über Farben und Typografie.

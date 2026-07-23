@@ -10,6 +10,7 @@
   var STORE_LOGS = "neonhope:logs";
   var STORE_ACTIVE = "neonhope:activeId";
   var STORE_LANG = "neonhope:lang";
+  var STORE_THEME = "neonhope:theme";
 
   // Character roster (from roster.js); empty fallback keeps the app usable.
   var ROSTER = window.ROSTER || [];
@@ -56,6 +57,7 @@
   var logs = {};        // id -> log object
   var activeId = null;
   var lang = "de";
+  var theme = null;     // "light" | "dark" | null (follow system)
 
   // ---- Utilities -----------------------------------------------------------
   function uuid() {
@@ -172,6 +174,8 @@
     activeId = localStorage.getItem(STORE_ACTIVE);
     lang = localStorage.getItem(STORE_LANG) ||
       ((navigator.language || "de").toLowerCase().indexOf("en") === 0 ? "en" : "de");
+    var storedTheme = localStorage.getItem(STORE_THEME);
+    theme = (storedTheme === "light" || storedTheme === "dark") ? storedTheme : null;
   }
 
   function saveStorage() {
@@ -179,6 +183,8 @@
       localStorage.setItem(STORE_LOGS, JSON.stringify(logs));
       localStorage.setItem(STORE_ACTIVE, activeId || "");
       localStorage.setItem(STORE_LANG, lang);
+      if (theme) localStorage.setItem(STORE_THEME, theme);
+      else localStorage.removeItem(STORE_THEME);
     } catch (e) { /* quota or private mode — ignore */ }
   }
 
@@ -707,8 +713,30 @@
     });
   }
 
+  /* Effective theme, resolving "follow system" (null) against the OS setting. */
+  function effectiveTheme() {
+    if (theme) return theme;
+    var m = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+    return m && m.matches ? "dark" : "light";
+  }
+  /* Apply the chosen theme to the document root (or follow system if null). */
+  function applyTheme() {
+    if (theme) document.documentElement.setAttribute("data-theme", theme);
+    else document.documentElement.removeAttribute("data-theme");
+  }
+  /* Reflect the current theme on the toggle button (icon + localised title). */
+  function updateThemeToggle() {
+    var btn = document.getElementById("btn-theme");
+    if (!btn) return;
+    var dark = effectiveTheme() === "dark";
+    btn.textContent = dark ? "☀️" : "🌙";      // shows what a click switches to
+    btn.title = dark ? tr().themeToLight : tr().themeToDark;
+    btn.setAttribute("aria-label", btn.title);
+  }
+
   function renderAll() {
     applyLanguage();
+    updateThemeToggle();
     renderLogSelect();
     renderCharacters();
     renderTracks();
@@ -785,11 +813,19 @@
       saveStorage();
       renderAll();
     });
+
+    document.getElementById("btn-theme").addEventListener("click", function () {
+      theme = effectiveTheme() === "dark" ? "light" : "dark";
+      applyTheme();
+      saveStorage();
+      updateThemeToggle();
+    });
   }
 
   // ---- Boot ----------------------------------------------------------------
   async function init() {
     loadStorage();
+    applyTheme();
 
     // A shared log in the URL fragment takes precedence (with confirmation).
     var m = location.hash.match(/(?:^#|[#&])log=([^&]+)/);

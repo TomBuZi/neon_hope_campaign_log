@@ -20,6 +20,8 @@
       shareLink: "Link teilen",
       langSwitch: "EN",
       langSwitchTitle: "Switch to English",
+      themeToDark: "Dunkles Design",
+      themeToLight: "Helles Design",
       // Sections
       charactersHeading: "Charaktere",
       character: "Charakter",
@@ -76,6 +78,8 @@
       shareLink: "Share link",
       langSwitch: "DE",
       langSwitchTitle: "Auf Deutsch wechseln",
+      themeToDark: "Dark theme",
+      themeToLight: "Light theme",
       charactersHeading: "Characters",
       character: "Character",
       pickCharacter: "Character",

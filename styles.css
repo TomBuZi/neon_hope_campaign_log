@@ -143,6 +143,7 @@ body {
 }
 .btn-accent:hover { border-color: transparent; filter: brightness(0.93); }
 .btn-lang { min-width: 3rem; font-weight: 700; }
+.btn-icon { padding: 0.5rem 0.7rem; font-size: 1.05rem; line-height: 1; }
 
 /* ---------- Layout ---------- */
 main {
