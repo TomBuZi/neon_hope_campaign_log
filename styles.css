@@ -199,7 +199,7 @@ main {
 .entry-list { display: flex; flex-direction: column; gap: 0.35rem; }
 .entry-row { display: flex; align-items: flex-start; gap: 0.35rem; }
 .entry-input { flex: 1 1 auto; min-width: 0; }
-textarea.entry-input { resize: vertical; min-height: 2.6rem; }
+textarea.entry-input { resize: none; overflow: hidden; min-height: 2.6rem; }
 .entry-remove {
   flex: 0 0 auto;
   width: 1.9rem;

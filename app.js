@@ -295,6 +295,13 @@
     return e;
   }
 
+  /* Resize a textarea to fit its content (no scrollbar, no manual handle). */
+  function autoGrow(ta) {
+    ta.style.height = "auto";
+    var border = ta.offsetHeight - ta.clientHeight; // top+bottom border (border-box)
+    ta.style.height = (ta.scrollHeight + border) + "px";
+  }
+
   function renderLogSelect() {
     var sel = document.getElementById("log-select");
     sel.innerHTML = "";
@@ -326,17 +333,22 @@
     var list = el("div", "entry-list");
     var inputSel = cfg.multiline ? "textarea" : "input";
 
+    function sizeAll() {
+      if (cfg.multiline) list.querySelectorAll("textarea").forEach(autoGrow);
+    }
+
     function draw() {
       list.innerHTML = "";
       cfg.getArray().forEach(function (val, i) {
         var row = el("div", "entry-row");
         var input = el(inputSel, "entry-input");
-        if (cfg.multiline) input.setAttribute("rows", "2");
+        if (cfg.multiline) input.setAttribute("rows", "1");
         else input.setAttribute("type", "text");
         input.value = val;
         input.placeholder = cfg.placeholder;
         input.addEventListener("input", function () {
           cfg.getArray()[i] = input.value;
+          if (cfg.multiline) autoGrow(input);
           scheduleSave();
         });
         var remove = el("button", "entry-remove",
@@ -351,6 +363,11 @@
         row.appendChild(remove);
         list.appendChild(row);
       });
+      // Fit heights once the elements are in the document (measurable).
+      sizeAll();
+      if (cfg.multiline && typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(sizeAll);
+      }
     }
     draw();
     field.appendChild(list);
