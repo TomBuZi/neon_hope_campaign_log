@@ -317,11 +317,20 @@
     });
   }
 
+  // Drag & drop state shared across list instances. `entryLists` maps each
+  // list's id to its live array + metadata so items can move between lists.
+  var dragState = null;          // { listId, index, group }
+  var entryLists = {};           // listId -> { group, getArray, canReceive, redraw }
+
   /* Generic editable string-list field: rows of text inputs (or textareas)
-     with per-row remove and an add button. `getArray` returns the live array
-     from the current log so only this list re-renders on add/remove.
-     cfg: { getArray, placeholder, addLabel, removeLabel, label?, multiline?,
-            fieldClass? } */
+     with reorder (buttons + drag&drop), per-row remove and an add button.
+     Rules: the add button is disabled while an empty entry exists, and an
+     entry that is emptied and blurred is removed. Items can be dragged within
+     a list to reorder, or between lists of the same `group` when the target
+     list's `canReceive()` allows it.
+     cfg: { listId, group, getArray, placeholder, addLabel, removeLabel,
+            moveUpLabel, moveDownLabel, dragLabel, label?, multiline?,
+            fieldClass?, canReceive? } */
   function buildStringListField(cfg) {
     var field = el("div", "field " + (cfg.fieldClass || ""));
     if (cfg.label) {
@@ -332,15 +341,72 @@
 
     var list = el("div", "entry-list");
     var inputSel = cfg.multiline ? "textarea" : "input";
+    var canReceive = cfg.canReceive || function () { return true; };
 
     function sizeAll() {
       if (cfg.multiline) list.querySelectorAll("textarea").forEach(autoGrow);
     }
+    function updateAddState() {
+      add.disabled = cfg.getArray().some(function (v) { return !String(v).trim(); });
+    }
+    function accepts() {
+      return dragState && dragState.group === cfg.group &&
+        (dragState.listId === cfg.listId || canReceive());
+    }
+    function swap(a, b) {
+      var arr = cfg.getArray();
+      if (b < 0 || b >= arr.length) return;
+      var t = arr[a]; arr[a] = arr[b]; arr[b] = t;
+      scheduleSave();
+      draw();
+    }
+    /* Move the dragged item to `targetIndex` in this list (reorder or, for a
+       different source list of the same group, a cross-list move). */
+    function performDrop(targetIndex) {
+      var src = entryLists[dragState.listId], dst = entryLists[cfg.listId];
+      if (!src || !dst || src.group !== dst.group) return;
+      if (dragState.listId === cfg.listId) {
+        var arr = dst.getArray(), from = dragState.index;
+        if (from < 0 || from >= arr.length) return;
+        if (targetIndex > from) targetIndex--;
+        if (targetIndex === from) return;
+        arr.splice(targetIndex, 0, arr.splice(from, 1)[0]);
+        dst.redraw();
+      } else {
+        if (!dst.canReceive()) return;
+        var item = src.getArray().splice(dragState.index, 1)[0];
+        if (item === undefined) return;
+        dst.getArray().splice(targetIndex, 0, item);
+        src.redraw();
+        dst.redraw();
+      }
+      scheduleSave();
+    }
 
     function draw() {
       list.innerHTML = "";
-      cfg.getArray().forEach(function (val, i) {
+      var arr = cfg.getArray();
+      arr.forEach(function (val, i) {
         var row = el("div", "entry-row");
+
+        var grip = el("span", "entry-drag",
+          { draggable: "true", title: cfg.dragLabel, "aria-hidden": "true" });
+        grip.textContent = "⠿";
+        grip.addEventListener("dragstart", function (e) {
+          dragState = { listId: cfg.listId, index: i, group: cfg.group };
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = "move";
+            try { e.dataTransfer.setData("text/plain", String(i)); } catch (_) {}
+          }
+          row.classList.add("dragging");
+        });
+        grip.addEventListener("dragend", function () {
+          dragState = null;
+          list.querySelectorAll(".entry-row").forEach(function (r) {
+            r.classList.remove("dragging", "drop-before", "drop-after");
+          });
+        });
+
         var input = el(inputSel, "entry-input");
         if (cfg.multiline) input.setAttribute("rows", "1");
         else input.setAttribute("type", "text");
@@ -349,8 +415,30 @@
         input.addEventListener("input", function () {
           cfg.getArray()[i] = input.value;
           if (cfg.multiline) autoGrow(input);
+          updateAddState();
           scheduleSave();
         });
+        input.addEventListener("blur", function () {
+          var a = cfg.getArray();
+          if (i < a.length && !String(a[i]).trim()) {
+            a.splice(i, 1);
+            scheduleSave();
+            draw();
+          }
+        });
+
+        var up = el("button", "entry-move",
+          { type: "button", title: cfg.moveUpLabel, "aria-label": cfg.moveUpLabel });
+        up.textContent = "↑";
+        up.disabled = i === 0;
+        up.addEventListener("click", function () { swap(i, i - 1); });
+
+        var down = el("button", "entry-move",
+          { type: "button", title: cfg.moveDownLabel, "aria-label": cfg.moveDownLabel });
+        down.textContent = "↓";
+        down.disabled = i === arr.length - 1;
+        down.addEventListener("click", function () { swap(i, i + 1); });
+
         var remove = el("button", "entry-remove",
           { type: "button", "aria-label": cfg.removeLabel, title: cfg.removeLabel });
         remove.textContent = "×";
@@ -359,18 +447,42 @@
           scheduleSave();
           draw();
         });
+
+        row.addEventListener("dragover", function (e) {
+          if (!accepts()) return;
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+          var rect = row.getBoundingClientRect();
+          var after = (e.clientY - rect.top) > rect.height / 2;
+          row.classList.toggle("drop-after", after);
+          row.classList.toggle("drop-before", !after);
+        });
+        row.addEventListener("dragleave", function () {
+          row.classList.remove("drop-before", "drop-after");
+        });
+        row.addEventListener("drop", function (e) {
+          if (!accepts()) return;
+          e.preventDefault();
+          var rect = row.getBoundingClientRect();
+          var after = (e.clientY - rect.top) > rect.height / 2;
+          row.classList.remove("drop-before", "drop-after");
+          performDrop(i + (after ? 1 : 0));
+        });
+
+        row.appendChild(grip);
         row.appendChild(input);
+        row.appendChild(up);
+        row.appendChild(down);
         row.appendChild(remove);
         list.appendChild(row);
       });
-      // Fit heights once the elements are in the document (measurable).
+
+      updateAddState();
       sizeAll();
       if (cfg.multiline && typeof requestAnimationFrame === "function") {
         requestAnimationFrame(sizeAll);
       }
     }
-    draw();
-    field.appendChild(list);
 
     var add = el("button", "entry-add", { type: "button" });
     add.textContent = cfg.addLabel;
@@ -381,20 +493,46 @@
       var inputs = list.querySelectorAll(inputSel);
       if (inputs.length) inputs[inputs.length - 1].focus();
     });
+
+    draw();
+    field.appendChild(list);
     field.appendChild(add);
+
+    // Dropping on empty list space appends to the end.
+    list.addEventListener("dragover", function (e) {
+      if (!accepts() || e.target !== list) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    });
+    list.addEventListener("drop", function (e) {
+      if (!accepts() || e.target !== list) return;
+      e.preventDefault();
+      performDrop(cfg.getArray().length);
+    });
+
+    entryLists[cfg.listId] = {
+      group: cfg.group, getArray: cfg.getArray, canReceive: canReceive, redraw: draw,
+    };
     return field;
   }
 
-  /* Story Allies field for one character (short single-line names). */
+  /* Story Allies field for one character (short single-line names).
+     Droppable from another character's list only when this character is set. */
   function buildAlliesField(idx, d) {
     return buildStringListField({
+      listId: "allies-" + idx,
+      group: "allies",
       fieldClass: "allies-field",
       label: d.allies,
       placeholder: d.alliesPlaceholder,
       addLabel: d.addAlly,
       removeLabel: d.removeAlly,
+      moveUpLabel: d.moveUp,
+      moveDownLabel: d.moveDown,
+      dragLabel: d.dragReorder,
       multiline: false,
       getArray: function () { return activeLog().characters[idx].allies; },
+      canReceive: function () { return !!activeLog().characters[idx].characterSlug; },
     });
   }
 
@@ -540,18 +678,28 @@
     var notes = document.getElementById("campaignNotes-list");
     notes.innerHTML = "";
     notes.appendChild(buildStringListField({
+      listId: "notes",
+      group: "notes",
       placeholder: d.notesPlaceholder,
       addLabel: d.addNote,
       removeLabel: d.removeNote,
+      moveUpLabel: d.moveUp,
+      moveDownLabel: d.moveDown,
+      dragLabel: d.dragReorder,
       multiline: true,
       getArray: function () { return activeLog().campaignNotes; },
     }));
     var mods = document.getElementById("modifierPoolUpdates-list");
     mods.innerHTML = "";
     mods.appendChild(buildStringListField({
+      listId: "mods",
+      group: "mods",
       placeholder: d.modifierPlaceholder,
       addLabel: d.addModifier,
       removeLabel: d.removeModifier,
+      moveUpLabel: d.moveUp,
+      moveDownLabel: d.moveDown,
+      dragLabel: d.dragReorder,
       multiline: true,
       getArray: function () { return activeLog().modifierPoolUpdates; },
     }));
