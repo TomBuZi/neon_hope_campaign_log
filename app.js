@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  var SCHEMA_VERSION = 3;
+  var SCHEMA_VERSION = 4;
   var TRACK_MAX = 15;
   var TRACK_KEYS = ["startingResources", "followers", "nubiconWatchesYou"];
   var STORE_LOGS = "neonhope:logs";
@@ -83,17 +83,24 @@
 
   function tr() { return window.t(lang); }
 
-  /* Normalise the "Story Allies" value into a clean array of names.
-     Accepts either an array (current model) or a string (legacy / free text). */
-  function coerceAllies(v) {
+  /* Normalise a value into a clean array of non-empty strings.
+     opts.split: split a legacy string on newlines (else wrap it as one entry).
+     opts.trim: trim each entry (for short names; off for free-text entries). */
+  function coerceStringList(v, opts) {
+    opts = opts || {};
     var arr = [];
-    if (Array.isArray(v)) arr = v;
-    else if (typeof v === "string") arr = v.split(/\r?\n/);
+    if (Array.isArray(v)) arr = v.slice();
+    else if (typeof v === "string") arr = opts.split ? v.split(/\r?\n/) : [v];
     return arr
       .map(function (x) { return typeof x === "string" ? x : String(x); })
-      .map(function (x) { return x.trim(); })
-      .filter(function (x) { return x.length > 0; });
+      .map(function (x) { return opts.trim ? x.trim() : x; })
+      .filter(function (x) { return x.trim().length > 0; });
   }
+  /* Story Allies: a list of short names (newline-split, trimmed). */
+  function coerceAllies(v) { return coerceStringList(v, { split: true, trim: true }); }
+  /* Notes / modifier updates: a list of free-text entries (legacy string
+     becomes a single entry; internal formatting preserved). */
+  function coerceEntries(v) { return coerceStringList(v, { split: false, trim: false }); }
 
   function emptyLog(title) {
     return {
@@ -109,8 +116,8 @@
         { characterSlug: "", toolSlug: "", allies: [] },
       ],
       tracks: { startingResources: 0, followers: 0, nubiconWatchesYou: 0 },
-      campaignNotes: "",
-      modifierPoolUpdates: "",
+      campaignNotes: [],
+      modifierPoolUpdates: [],
     };
   }
 
@@ -118,8 +125,7 @@
   function normalizeLog(obj) {
     if (!obj || typeof obj !== "object") return null;
     // Accept any known schema version; older ones are migrated below.
-    if (obj.schemaVersion !== 1 && obj.schemaVersion !== 2 && obj.schemaVersion !== 3)
-      return null;
+    if ([1, 2, 3, 4].indexOf(obj.schemaVersion) === -1) return null;
     var base = emptyLog();
     var log = {
       schemaVersion: SCHEMA_VERSION,
@@ -129,9 +135,8 @@
       updatedAt: typeof obj.updatedAt === "string" ? obj.updatedAt : nowISO(),
       characters: [],
       tracks: { startingResources: 0, followers: 0, nubiconWatchesYou: 0 },
-      campaignNotes: typeof obj.campaignNotes === "string" ? obj.campaignNotes : "",
-      modifierPoolUpdates:
-        typeof obj.modifierPoolUpdates === "string" ? obj.modifierPoolUpdates : "",
+      campaignNotes: coerceEntries(obj.campaignNotes),
+      modifierPoolUpdates: coerceEntries(obj.modifierPoolUpdates),
     };
     for (var i = 0; i < 4; i++) {
       log.characters.push(normalizeCharacter(obj.characters && obj.characters[i]));
@@ -159,6 +164,8 @@
       var l = logs[id];
       if (l && Array.isArray(l.characters)) {
         l.characters = l.characters.map(normalizeCharacter);
+        l.campaignNotes = coerceEntries(l.campaignNotes);
+        l.modifierPoolUpdates = coerceEntries(l.modifierPoolUpdates);
         l.schemaVersion = SCHEMA_VERSION;
       }
     });
@@ -303,35 +310,40 @@
     });
   }
 
-  /* Build the "Story Allies" field: a list of name inputs with per-row
-     remove buttons and an add button. Only this list re-renders on
-     add/remove, so name/tool inputs keep their focus. */
-  function buildAlliesField(idx, d) {
-    var field = el("div", "field allies-field");
-    var label = el("label");
-    label.textContent = d.allies;
-    field.appendChild(label);
+  /* Generic editable string-list field: rows of text inputs (or textareas)
+     with per-row remove and an add button. `getArray` returns the live array
+     from the current log so only this list re-renders on add/remove.
+     cfg: { getArray, placeholder, addLabel, removeLabel, label?, multiline?,
+            fieldClass? } */
+  function buildStringListField(cfg) {
+    var field = el("div", "field " + (cfg.fieldClass || ""));
+    if (cfg.label) {
+      var label = el("label");
+      label.textContent = cfg.label;
+      field.appendChild(label);
+    }
 
-    var list = el("div", "ally-list");
+    var list = el("div", "entry-list");
+    var inputSel = cfg.multiline ? "textarea" : "input";
 
     function draw() {
       list.innerHTML = "";
-      var arr = activeLog().characters[idx].allies;
-      arr.forEach(function (val, ai) {
-        var row = el("div", "ally-row");
-        var input = el("input", null,
-          { type: "text", "data-char": idx, "data-ally": ai });
+      cfg.getArray().forEach(function (val, i) {
+        var row = el("div", "entry-row");
+        var input = el(inputSel, "entry-input");
+        if (cfg.multiline) input.setAttribute("rows", "2");
+        else input.setAttribute("type", "text");
         input.value = val;
-        input.placeholder = d.alliesPlaceholder;
+        input.placeholder = cfg.placeholder;
         input.addEventListener("input", function () {
-          activeLog().characters[idx].allies[ai] = input.value;
+          cfg.getArray()[i] = input.value;
           scheduleSave();
         });
-        var remove = el("button", "ally-remove",
-          { type: "button", "aria-label": d.removeAlly, title: d.removeAlly });
+        var remove = el("button", "entry-remove",
+          { type: "button", "aria-label": cfg.removeLabel, title: cfg.removeLabel });
         remove.textContent = "×";
         remove.addEventListener("click", function () {
-          activeLog().characters[idx].allies.splice(ai, 1);
+          cfg.getArray().splice(i, 1);
           scheduleSave();
           draw();
         });
@@ -343,17 +355,30 @@
     draw();
     field.appendChild(list);
 
-    var add = el("button", "ally-add", { type: "button" });
-    add.textContent = d.addAlly;
+    var add = el("button", "entry-add", { type: "button" });
+    add.textContent = cfg.addLabel;
     add.addEventListener("click", function () {
-      activeLog().characters[idx].allies.push("");
+      cfg.getArray().push("");
       scheduleSave();
       draw();
-      var inputs = list.querySelectorAll("input");
+      var inputs = list.querySelectorAll(inputSel);
       if (inputs.length) inputs[inputs.length - 1].focus();
     });
     field.appendChild(add);
     return field;
+  }
+
+  /* Story Allies field for one character (short single-line names). */
+  function buildAlliesField(idx, d) {
+    return buildStringListField({
+      fieldClass: "allies-field",
+      label: d.allies,
+      placeholder: d.alliesPlaceholder,
+      addLabel: d.addAlly,
+      removeLabel: d.removeAlly,
+      multiline: false,
+      getArray: function () { return activeLog().characters[idx].allies; },
+    });
   }
 
   function renderCharacters() {
@@ -506,10 +531,26 @@
     });
   }
 
-  function renderNotes() {
-    var log = activeLog();
-    document.getElementById("campaignNotes").value = log.campaignNotes;
-    document.getElementById("modifierPoolUpdates").value = log.modifierPoolUpdates;
+  function renderEntryLists() {
+    var d = tr();
+    var notes = document.getElementById("campaignNotes-list");
+    notes.innerHTML = "";
+    notes.appendChild(buildStringListField({
+      placeholder: d.notesPlaceholder,
+      addLabel: d.addNote,
+      removeLabel: d.removeNote,
+      multiline: true,
+      getArray: function () { return activeLog().campaignNotes; },
+    }));
+    var mods = document.getElementById("modifierPoolUpdates-list");
+    mods.innerHTML = "";
+    mods.appendChild(buildStringListField({
+      placeholder: d.modifierPlaceholder,
+      addLabel: d.addModifier,
+      removeLabel: d.removeModifier,
+      multiline: true,
+      getArray: function () { return activeLog().modifierPoolUpdates; },
+    }));
   }
 
   /* Apply the current language to every element flagged with data-i18n*. */
@@ -535,7 +576,7 @@
     renderLogSelect();
     renderCharacters();
     renderTracks();
-    renderNotes();
+    renderEntryLists();
   }
 
   // ---- Toast ---------------------------------------------------------------
@@ -607,13 +648,6 @@
       lang = lang === "de" ? "en" : "de";
       saveStorage();
       renderAll();
-    });
-
-    ["campaignNotes", "modifierPoolUpdates"].forEach(function (id) {
-      document.getElementById(id).addEventListener("input", function (e) {
-        activeLog()[id] = e.target.value;
-        scheduleSave();
-      });
     });
   }
 

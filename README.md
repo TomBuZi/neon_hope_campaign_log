@@ -18,7 +18,9 @@ Läuft komplett im Browser, ganz ohne Server, und ist auf **GitHub Pages** gehos
   wird als zweites Dropdown angeboten, wobei Vorder- und Rückseite des doppelseitigen Vorteils
   einzeln wählbar sind. Charakter-Vorteile stammen von [neonhopedb.com](https://neonhopedb.com);
   ein Teil der deutschen Namen ist offiziell, der Rest sind eigene Übersetzungen (im UI markiert).
-- **Story Verbündete als Namensliste** mit Hinzufügen/Entfernen je Eintrag.
+- **Listen-Eingaben** für Story Verbündete, Kampagnen-Notizen und Veränderungen der
+  Modifikatoren-Auswahl: einzelne Einträge werden explizit hinzugefügt und entfernt
+  (Notizen/Änderungen mehrzeilig).
 - **Automatisches Speichern** im Browser (`localStorage`) – nichts verlässt dein Gerät.
 - **Mehrere Logs** parallel verwalten, umbenennen, löschen.
 - **Export / Import** als `.json`-Datei zur Sicherung oder Übertragung zwischen Geräten.

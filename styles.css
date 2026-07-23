@@ -195,11 +195,12 @@ main {
 .field { display: flex; flex-direction: column; gap: 0.2rem; }
 .field label { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.03em; }
 
-/* Story allies: dynamic name list */
-.allies-field .ally-list { display: flex; flex-direction: column; gap: 0.35rem; }
-.ally-row { display: flex; align-items: center; gap: 0.35rem; }
-.ally-row input { flex: 1 1 auto; min-width: 0; }
-.ally-remove {
+/* Editable string lists (Story Allies, Campaign Notes, Modifier Updates) */
+.entry-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.entry-row { display: flex; align-items: flex-start; gap: 0.35rem; }
+.entry-input { flex: 1 1 auto; min-width: 0; }
+textarea.entry-input { resize: vertical; min-height: 2.6rem; }
+.entry-remove {
   flex: 0 0 auto;
   width: 1.9rem;
   height: 1.9rem;
@@ -215,9 +216,9 @@ main {
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s;
 }
-.ally-remove:hover { color: var(--danger); border-color: var(--danger); }
-.ally-remove:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
-.ally-add {
+.entry-remove:hover { color: var(--danger); border-color: var(--danger); }
+.entry-remove:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
+.entry-add {
   margin-top: 0.4rem;
   align-self: flex-start;
   background: transparent;
@@ -230,8 +231,8 @@ main {
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s;
 }
-.ally-add:hover { color: var(--accent); border-color: var(--accent); }
-.ally-add:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
+.entry-add:hover { color: var(--accent); border-color: var(--accent); }
+.entry-add:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
 
 input[type="text"], textarea {
   width: 100%;
@@ -248,8 +249,6 @@ input[type="text"]:focus, textarea:focus {
   border-color: var(--accent);
   box-shadow: var(--glow);
 }
-.notes { resize: vertical; min-height: 4rem; }
-
 /* Character picker */
 .char-select {
   width: 100%;
