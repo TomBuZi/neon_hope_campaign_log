@@ -17,8 +17,7 @@ Läuft komplett im Browser, ganz ohne Server, und ist auf **GitHub Pages** gehos
   alternative Versionen und Erweiterung *A Hopeful Cause*). Der zugehörige **Charakter-Vorteil**
   wird als zweites Dropdown angeboten, wobei Vorder- und Rückseite des doppelseitigen Vorteils
   einzeln wählbar sind. Charakter-Vorteile stammen von [neonhopedb.com](https://neonhopedb.com);
-  deutsche Namen sind für die vier Grundspiel-Charaktere offiziell, für die übrigen acht eigene
-  Übersetzungen (im UI markiert).
+  ein Teil der deutschen Namen ist offiziell, der Rest sind eigene Übersetzungen (im UI markiert).
 - **Story Verbündete als Namensliste** mit Hinzufügen/Entfernen je Eintrag.
 - **Automatisches Speichern** im Browser (`localStorage`) – nichts verlässt dein Gerät.
 - **Mehrere Logs** parallel verwalten, umbenennen, löschen.

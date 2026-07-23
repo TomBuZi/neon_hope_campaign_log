@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  var SCHEMA_VERSION = 2;
+  var SCHEMA_VERSION = 3;
   var TRACK_MAX = 15;
   var TRACK_KEYS = ["startingResources", "followers", "nubiconWatchesYou"];
   var STORE_LOGS = "neonhope:logs";
@@ -17,11 +17,39 @@
     for (var i = 0; i < ROSTER.length; i++) if (ROSTER[i].slug === slug) return ROSTER[i];
     return null;
   }
-  /* Split a roster tool ("Front / Back") into its individual sides. */
-  function toolSides(r, language) {
-    var s = (language === "de" ? r.toolDe : r.toolEn) || "";
-    return s.split(" / ").map(function (x) { return x.trim(); })
-      .filter(function (x) { return x.length > 0; });
+  /* Find a tool side (front/back) within a roster entry by its slug. */
+  function toolSlugOf(r, slug) {
+    if (!r || !r.tools) return null;
+    for (var i = 0; i < r.tools.length; i++) if (r.tools[i].slug === slug) return r.tools[i];
+    return null;
+  }
+  /* Localised label for a tool side. */
+  function sideLabel(side, language) {
+    return side ? (language === "de" ? side.de : side.en) : "";
+  }
+  /* Legacy migration: map an old resolved tool string (either language) to a
+     side slug; falls back to the front side. */
+  function toolSlugFromLegacy(r, oldTool) {
+    if (r && oldTool) {
+      for (var i = 0; i < r.tools.length; i++) {
+        if (r.tools[i].en === oldTool || r.tools[i].de === oldTool) return r.tools[i].slug;
+      }
+    }
+    return r && r.tools[0] ? r.tools[0].slug : "";
+  }
+  /* Normalise one character to the v3 shape: { characterSlug, toolSlug, allies }.
+     Accepts v3 (toolSlug) and legacy v1/v2 (name/tool strings). */
+  function normalizeCharacter(c) {
+    c = c || {};
+    var slug = typeof c.characterSlug === "string" ? c.characterSlug : "";
+    var r = rosterBySlug(slug);
+    var toolSlug = "";
+    if (r) {
+      toolSlug = (typeof c.toolSlug === "string" && toolSlugOf(r, c.toolSlug))
+        ? c.toolSlug
+        : toolSlugFromLegacy(r, typeof c.tool === "string" ? c.tool : "");
+    }
+    return { characterSlug: slug, toolSlug: toolSlug, allies: coerceAllies(c.allies) };
   }
 
   // ---- State ---------------------------------------------------------------
@@ -75,10 +103,10 @@
       createdAt: nowISO(),
       updatedAt: nowISO(),
       characters: [
-        { name: "", tool: "", allies: [], characterSlug: "" },
-        { name: "", tool: "", allies: [], characterSlug: "" },
-        { name: "", tool: "", allies: [], characterSlug: "" },
-        { name: "", tool: "", allies: [], characterSlug: "" },
+        { characterSlug: "", toolSlug: "", allies: [] },
+        { characterSlug: "", toolSlug: "", allies: [] },
+        { characterSlug: "", toolSlug: "", allies: [] },
+        { characterSlug: "", toolSlug: "", allies: [] },
       ],
       tracks: { startingResources: 0, followers: 0, nubiconWatchesYou: 0 },
       campaignNotes: "",
@@ -90,7 +118,8 @@
   function normalizeLog(obj) {
     if (!obj || typeof obj !== "object") return null;
     // Accept any known schema version; older ones are migrated below.
-    if (obj.schemaVersion !== 1 && obj.schemaVersion !== 2) return null;
+    if (obj.schemaVersion !== 1 && obj.schemaVersion !== 2 && obj.schemaVersion !== 3)
+      return null;
     var base = emptyLog();
     var log = {
       schemaVersion: SCHEMA_VERSION,
@@ -105,13 +134,7 @@
         typeof obj.modifierPoolUpdates === "string" ? obj.modifierPoolUpdates : "",
     };
     for (var i = 0; i < 4; i++) {
-      var c = (obj.characters && obj.characters[i]) || {};
-      log.characters.push({
-        name: typeof c.name === "string" ? c.name : "",
-        tool: typeof c.tool === "string" ? c.tool : "",
-        allies: coerceAllies(c.allies),
-        characterSlug: typeof c.characterSlug === "string" ? c.characterSlug : "",
-      });
+      log.characters.push(normalizeCharacter(obj.characters && obj.characters[i]));
     }
     TRACK_KEYS.forEach(function (k) {
       var v = obj.tracks ? Number(obj.tracks[k]) : 0;
@@ -130,15 +153,12 @@
       logs = raw ? JSON.parse(raw) : {};
     } catch (e) { logs = {}; }
     if (!logs || typeof logs !== "object") logs = {};
-    // Migrate stored logs to the current model (allies string -> array).
+    // Migrate stored logs to the current model (drop derived name/tool,
+    // legacy tool string -> toolSlug, allies string -> array).
     Object.keys(logs).forEach(function (id) {
       var l = logs[id];
       if (l && Array.isArray(l.characters)) {
-        l.characters.forEach(function (c) {
-          if (!c) return;
-          c.allies = coerceAllies(c.allies);
-          if (typeof c.characterSlug !== "string") c.characterSlug = "";
-        });
+        l.characters = l.characters.map(normalizeCharacter);
         l.schemaVersion = SCHEMA_VERSION;
       }
     });
@@ -336,26 +356,6 @@
     return field;
   }
 
-  /* When the UI language changes, re-derive roster-based name and tool-side
-     values so they follow the new language (across all logs). The tool is
-     matched by side index so the chosen front/back side is preserved. */
-  function relabelForLanguage(newLang) {
-    Object.keys(logs).forEach(function (id) {
-      var l = logs[id];
-      if (!l || !Array.isArray(l.characters)) return;
-      l.characters.forEach(function (c) {
-        if (!c) return;
-        var r = rosterBySlug(c.characterSlug);
-        if (!r) return;
-        var oldSides = toolSides(r, lang);
-        var newSides = toolSides(r, newLang);
-        var i = oldSides.indexOf(c.tool);
-        if (i !== -1 && newSides[i]) c.tool = newSides[i];
-        c.name = newLang === "de" ? r.nameDe : r.nameEn;
-      });
-    });
-  }
-
   function renderCharacters() {
     var wrap = document.getElementById("characters");
     wrap.innerHTML = "";
@@ -408,7 +408,7 @@
       toolField.appendChild(note);
       card.appendChild(toolField);
 
-      // Rebuild the tool options for the currently selected character.
+      // Rebuild the tool options (the chosen character's two tool sides).
       function refreshToolOptions() {
         toolSelect.innerHTML = "";
         var c = activeLog().characters[idx];
@@ -423,22 +423,15 @@
           return;
         }
         toolSelect.disabled = false;
-        var sides = toolSides(r, lang);
-        sides.forEach(function (side) {
+        r.tools.forEach(function (side) {
           var opt = el("option");
-          opt.value = side;
-          opt.textContent = side;
+          opt.value = side.slug;
+          opt.textContent = sideLabel(side, lang);
           toolSelect.appendChild(opt);
         });
-        // Keep any pre-existing custom/legacy value visible.
-        if (c.tool && sides.indexOf(c.tool) === -1) {
-          var extra = el("option");
-          extra.value = c.tool;
-          extra.textContent = c.tool;
-          toolSelect.appendChild(extra);
-        }
-        toolSelect.value = c.tool || sides[0] || "";
-        if (!c.tool) c.tool = toolSelect.value; // default to front side
+        // Default to the front side if none / an unknown slug is stored.
+        if (!toolSlugOf(r, c.toolSlug)) c.toolSlug = r.tools[0].slug;
+        toolSelect.value = c.toolSlug;
       }
 
       // Show a hint when the German tool name is an unofficial translation.
@@ -450,7 +443,7 @@
       }
 
       toolSelect.addEventListener("change", function () {
-        activeLog().characters[idx].tool = toolSelect.value;
+        activeLog().characters[idx].toolSlug = toolSelect.value;
         scheduleSave();
       });
 
@@ -458,13 +451,7 @@
         var c = activeLog().characters[idx];
         c.characterSlug = select.value;
         var r = rosterBySlug(select.value);
-        if (r) {
-          c.name = lang === "de" ? r.nameDe : r.nameEn;
-          c.tool = (toolSides(r, lang)[0] || ""); // default to front side
-        } else {
-          c.name = "";
-          c.tool = "";
-        }
+        c.toolSlug = r ? r.tools[0].slug : ""; // default to front side
         refreshToolOptions();
         updateNote();
         scheduleSave();
@@ -617,9 +604,7 @@
     document.getElementById("btn-share").addEventListener("click", shareLink);
 
     document.getElementById("btn-lang").addEventListener("click", function () {
-      var newLang = lang === "de" ? "en" : "de";
-      relabelForLanguage(newLang);
-      lang = newLang;
+      lang = lang === "de" ? "en" : "de";
       saveStorage();
       renderAll();
     });
