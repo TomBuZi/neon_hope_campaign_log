@@ -323,14 +323,13 @@
   var entryLists = {};           // listId -> { group, getArray, canReceive, redraw }
 
   /* Generic editable string-list field: rows of text inputs (or textareas)
-     with reorder (buttons + drag&drop), per-row remove and an add button.
+     with drag&drop reorder, per-row remove and an add button.
      Rules: the add button is disabled while an empty entry exists, and an
      entry that is emptied and blurred is removed. Items can be dragged within
      a list to reorder, or between lists of the same `group` when the target
      list's `canReceive()` allows it.
      cfg: { listId, group, getArray, placeholder, addLabel, removeLabel,
-            moveUpLabel, moveDownLabel, dragLabel, label?, multiline?,
-            fieldClass?, canReceive? } */
+            dragLabel, label?, multiline?, fieldClass?, canReceive? } */
   function buildStringListField(cfg) {
     var field = el("div", "field " + (cfg.fieldClass || ""));
     if (cfg.label) {
@@ -353,12 +352,14 @@
       return dragState && dragState.group === cfg.group &&
         (dragState.listId === cfg.listId || canReceive());
     }
-    function swap(a, b) {
-      var arr = cfg.getArray();
-      if (b < 0 || b >= arr.length) return;
-      var t = arr[a]; arr[a] = arr[b]; arr[b] = t;
-      scheduleSave();
-      draw();
+    /* Reset all transient drag visuals (called on dragend). */
+    function clearDragCues() {
+      dragState = null;
+      document.body.classList.remove("dnd-" + cfg.group);
+      document.querySelectorAll(".entry-row.dragging, .entry-row.drop-before, .entry-row.drop-after")
+        .forEach(function (r) { r.classList.remove("dragging", "drop-before", "drop-after"); });
+      document.querySelectorAll(".entry-list.drop-active")
+        .forEach(function (l) { l.classList.remove("drop-active"); });
     }
     /* Move the dragged item to `targetIndex` in this list (reorder or, for a
        different source list of the same group, a cross-list move). */
@@ -399,13 +400,10 @@
             try { e.dataTransfer.setData("text/plain", String(i)); } catch (_) {}
           }
           row.classList.add("dragging");
+          // Reveal empty same-group lists as drop zones while dragging.
+          document.body.classList.add("dnd-" + cfg.group);
         });
-        grip.addEventListener("dragend", function () {
-          dragState = null;
-          list.querySelectorAll(".entry-row").forEach(function (r) {
-            r.classList.remove("dragging", "drop-before", "drop-after");
-          });
-        });
+        grip.addEventListener("dragend", clearDragCues);
 
         var input = el(inputSel, "entry-input");
         if (cfg.multiline) input.setAttribute("rows", "1");
@@ -426,18 +424,6 @@
             draw();
           }
         });
-
-        var up = el("button", "entry-move",
-          { type: "button", title: cfg.moveUpLabel, "aria-label": cfg.moveUpLabel });
-        up.textContent = "↑";
-        up.disabled = i === 0;
-        up.addEventListener("click", function () { swap(i, i - 1); });
-
-        var down = el("button", "entry-move",
-          { type: "button", title: cfg.moveDownLabel, "aria-label": cfg.moveDownLabel });
-        down.textContent = "↓";
-        down.disabled = i === arr.length - 1;
-        down.addEventListener("click", function () { swap(i, i + 1); });
 
         var remove = el("button", "entry-remove",
           { type: "button", "aria-label": cfg.removeLabel, title: cfg.removeLabel });
@@ -471,8 +457,6 @@
 
         row.appendChild(grip);
         row.appendChild(input);
-        row.appendChild(up);
-        row.appendChild(down);
         row.appendChild(remove);
         list.appendChild(row);
       });
@@ -498,15 +482,21 @@
     field.appendChild(list);
     field.appendChild(add);
 
-    // Dropping on empty list space appends to the end.
+    // Dropping on empty list space (e.g. a character with no allies yet)
+    // appends to the end; highlight it as a drop zone while hovering.
     list.addEventListener("dragover", function (e) {
       if (!accepts() || e.target !== list) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      list.classList.add("drop-active");
+    });
+    list.addEventListener("dragleave", function (e) {
+      if (e.target === list) list.classList.remove("drop-active");
     });
     list.addEventListener("drop", function (e) {
       if (!accepts() || e.target !== list) return;
       e.preventDefault();
+      list.classList.remove("drop-active");
       performDrop(cfg.getArray().length);
     });
 
@@ -527,8 +517,6 @@
       placeholder: d.alliesPlaceholder,
       addLabel: d.addAlly,
       removeLabel: d.removeAlly,
-      moveUpLabel: d.moveUp,
-      moveDownLabel: d.moveDown,
       dragLabel: d.dragReorder,
       multiline: false,
       getArray: function () { return activeLog().characters[idx].allies; },
@@ -683,8 +671,6 @@
       placeholder: d.notesPlaceholder,
       addLabel: d.addNote,
       removeLabel: d.removeNote,
-      moveUpLabel: d.moveUp,
-      moveDownLabel: d.moveDown,
       dragLabel: d.dragReorder,
       multiline: true,
       getArray: function () { return activeLog().campaignNotes; },
@@ -697,8 +683,6 @@
       placeholder: d.modifierPlaceholder,
       addLabel: d.addModifier,
       removeLabel: d.removeModifier,
-      moveUpLabel: d.moveUp,
-      moveDownLabel: d.moveDown,
       dragLabel: d.dragReorder,
       multiline: true,
       getArray: function () { return activeLog().modifierPoolUpdates; },

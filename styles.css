@@ -227,10 +227,9 @@ textarea.entry-input { resize: none; overflow: hidden; min-height: 2.6rem; }
 .entry-drag:hover { color: var(--accent); }
 .entry-drag:active { cursor: grabbing; }
 
-.entry-move,
 .entry-remove {
   flex: 0 0 auto;
-  width: 1.7rem;
+  width: 1.9rem;
   height: 1.9rem;
   display: inline-flex;
   align-items: center;
@@ -239,18 +238,25 @@ textarea.entry-input { resize: none; overflow: hidden; min-height: 2.6rem; }
   border-radius: 6px;
   background: transparent;
   color: var(--text-dim);
+  font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s, opacity 0.12s;
+  transition: color 0.12s, border-color 0.12s;
 }
-.entry-move { font-size: 0.9rem; }
-.entry-remove { font-size: 1.15rem; }
-.entry-move:hover { color: var(--accent); border-color: var(--accent); }
 .entry-remove:hover { color: var(--danger); border-color: var(--danger); }
-.entry-move:disabled { opacity: 0.3; cursor: default; }
-.entry-move:disabled:hover { color: var(--text-dim); border-color: var(--panel-border); }
-.entry-move:focus-visible,
 .entry-remove:focus-visible { outline: 2px solid var(--accent-3); outline-offset: 1px; }
+
+/* Empty allies list becomes a visible drop zone while dragging an ally
+   (so allies can be dropped onto a character that has none yet). */
+body.dnd-allies .allies-field .entry-list:empty {
+  min-height: 2.4rem;
+  border: 1px dashed var(--panel-border);
+  border-radius: 8px;
+}
+body.dnd-allies .allies-field .entry-list:empty.drop-active {
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
 .entry-add {
   margin-top: 0.4rem;
   align-self: flex-start;

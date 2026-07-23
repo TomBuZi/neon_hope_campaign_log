@@ -47,8 +47,6 @@
       removeNote: "Notiz entfernen",
       addModifier: "+ Änderung",
       removeModifier: "Änderung entfernen",
-      moveUp: "Nach oben",
-      moveDown: "Nach unten",
       dragReorder: "Ziehen zum Verschieben",
       // Messages
       savedNotice: "Automatisch gespeichert",
@@ -103,8 +101,6 @@
       removeNote: "Remove note",
       addModifier: "+ Change",
       removeModifier: "Remove change",
-      moveUp: "Move up",
-      moveDown: "Move down",
       dragReorder: "Drag to reorder",
       savedNotice: "Saved automatically",
       linkCopied: "Link copied to clipboard",
