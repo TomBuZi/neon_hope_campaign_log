@@ -295,6 +295,20 @@
     return null;
   }
 
+  /* A unique default title: the base name, or "base (N)" where N is one more
+     than the highest number already used among "base" / "base (N)" logs. */
+  function nextLogTitle() {
+    var base = tr().newLogTitle;
+    var esc = base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    var re = new RegExp("^" + esc + "(?: \\((\\d+)\\))?$");
+    var maxN = 0;
+    Object.keys(logs).forEach(function (id) {
+      var m = ((logs[id].title || "").trim()).match(re);
+      if (m) { var n = m[1] ? parseInt(m[1], 10) : 1; if (n > maxN) maxN = n; }
+    });
+    return maxN === 0 ? base : base + " (" + (maxN + 1) + ")";
+  }
+
   function finishImport(id, updated) {
     activeId = id;
     saveStorage();
@@ -925,7 +939,7 @@
     });
 
     document.getElementById("btn-new").addEventListener("click", function () {
-      var log = emptyLog();
+      var log = emptyLog(nextLogTitle());
       logs[log.id] = log;
       activeId = log.id;
       saveStorage();
