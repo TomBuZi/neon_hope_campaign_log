@@ -572,6 +572,19 @@
     wrap.innerHTML = "";
     var log = activeLog();
     var d = tr();
+    var selects = [];
+    // Disable, in each picker, characters already chosen in another slot.
+    function syncCharacterOptions() {
+      var chosen = activeLog().characters.map(function (c) { return c.characterSlug; });
+      selects.forEach(function (sel, i) {
+        var mine = chosen[i];
+        sel.querySelectorAll("option").forEach(function (opt) {
+          if (!opt.value) { opt.disabled = false; return; } // keep placeholder
+          var usedElsewhere = chosen.some(function (s, j) { return j !== i && s === opt.value; });
+          opt.disabled = usedElsewhere && opt.value !== mine;
+        });
+      });
+    }
     log.characters.forEach(function (ch, idx) {
       var card = el("div", "character-card");
       var title = el("div", "card-title");
@@ -602,6 +615,7 @@
           select.appendChild(og);
         });
       select.value = ch.characterSlug || "";
+      selects.push(select);
       pickField.appendChild(pickLabel);
       pickField.appendChild(select);
       card.appendChild(pickField);
@@ -653,6 +667,7 @@
         var r = rosterBySlug(select.value);
         c.toolSlug = r ? r.tools[0].slug : ""; // default to front side
         refreshToolOptions();
+        syncCharacterOptions(); // update which options are taken in sibling pickers
         // Re-evaluate the allies "add" button (enabled only when a character is set).
         var allies = entryLists["allies-" + idx];
         if (allies) allies.redraw();
@@ -664,6 +679,7 @@
       card.appendChild(buildAlliesField(idx, d));
       wrap.appendChild(card);
     });
+    syncCharacterOptions();
   }
 
   function renderTracks() {
