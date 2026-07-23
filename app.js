@@ -323,10 +323,100 @@
     });
   }
 
-  // Drag & drop state shared across list instances. `entryLists` maps each
-  // list's id to its live array + metadata so items can move between lists.
+  // Pointer-based drag & drop (works with mouse, touch and pen). `entryLists`
+  // maps each list id to its live array + metadata; `dragState` tracks the
+  // source of the current drag.
   var dragState = null;          // { listId, index, group }
   var entryLists = {};           // listId -> { group, getArray, canReceive, redraw }
+  var autoScrollRAF = null;
+  var lastPointerY = 0;
+
+  /* Reset all transient drag visuals and state. */
+  function clearDragCues() {
+    dragState = null;
+    stopAutoScroll();
+    document.body.className = document.body.className.split(/\s+/)
+      .filter(function (c) { return c && c.indexOf("dnd-") !== 0; }).join(" ");
+    document.querySelectorAll(".entry-row.dragging, .entry-row.drop-before, .entry-row.drop-after")
+      .forEach(function (r) { r.classList.remove("dragging", "drop-before", "drop-after"); });
+    document.querySelectorAll(".entry-list.drop-active")
+      .forEach(function (l) { l.classList.remove("drop-active"); });
+  }
+
+  /* Move the dragged item into list `dstListId` at `targetIndex` (reorder
+     within a list, or a cross-list move for the same group). */
+  function moveEntry(dstListId, targetIndex) {
+    if (!dragState) return;
+    var src = entryLists[dragState.listId], dst = entryLists[dstListId];
+    if (!src || !dst || src.group !== dst.group) return;
+    if (dstListId === dragState.listId) {
+      var arr = dst.getArray(), from = dragState.index;
+      if (from < 0 || from >= arr.length) return;
+      if (targetIndex > from) targetIndex--;
+      if (targetIndex === from) return;
+      arr.splice(targetIndex, 0, arr.splice(from, 1)[0]);
+      dst.redraw();
+    } else {
+      if (!dst.canReceive()) return;
+      var item = src.getArray().splice(dragState.index, 1)[0];
+      if (item === undefined) return;
+      dst.getArray().splice(targetIndex, 0, item);
+      src.redraw();
+      dst.redraw();
+    }
+    scheduleSave();
+  }
+
+  /* Resolve the drop target under a viewport point, or null. */
+  function resolveTarget(x, y) {
+    if (!dragState) return null;
+    var elu = document.elementFromPoint(x, y);
+    if (!elu || !elu.closest) return null;
+    var listEl = elu.closest(".entry-list");
+    if (!listEl) return null;
+    var dstId = listEl.getAttribute("data-list-id");
+    var dst = entryLists[dstId];
+    if (!dst || dst.group !== dragState.group) return null;
+    if (dstId !== dragState.listId && !dst.canReceive()) return null;
+    var rows = Array.prototype.filter.call(listEl.children, function (c) {
+      return c.classList && c.classList.contains("entry-row");
+    });
+    var row = elu.closest(".entry-row");
+    if (row && rows.indexOf(row) !== -1) {
+      var rect = row.getBoundingClientRect();
+      var after = (y - rect.top) > rect.height / 2;
+      return { listId: dstId, index: rows.indexOf(row) + (after ? 1 : 0), rowEl: row, after: after };
+    }
+    return { listId: dstId, index: dst.getArray().length, listEl: listEl };
+  }
+
+  /* Paint insertion cues for a resolved target (or clear them). */
+  function paintCues(target) {
+    document.querySelectorAll(".entry-row.drop-before, .entry-row.drop-after")
+      .forEach(function (r) { r.classList.remove("drop-before", "drop-after"); });
+    document.querySelectorAll(".entry-list.drop-active")
+      .forEach(function (l) { l.classList.remove("drop-active"); });
+    if (!target) return;
+    if (target.rowEl) target.rowEl.classList.add(target.after ? "drop-after" : "drop-before");
+    else if (target.listEl) target.listEl.classList.add("drop-active");
+  }
+
+  /* Auto-scroll the page while dragging near the top/bottom viewport edges. */
+  function startAutoScroll() {
+    if (autoScrollRAF || typeof requestAnimationFrame !== "function") return;
+    var step = function () {
+      var margin = 64, h = window.innerHeight || 0, dy = 0;
+      if (lastPointerY < margin) dy = -Math.ceil((margin - lastPointerY) / 5);
+      else if (lastPointerY > h - margin) dy = Math.ceil((lastPointerY - (h - margin)) / 5);
+      if (dy) window.scrollBy(0, dy);
+      autoScrollRAF = requestAnimationFrame(step);
+    };
+    autoScrollRAF = requestAnimationFrame(step);
+  }
+  function stopAutoScroll() {
+    if (autoScrollRAF && typeof cancelAnimationFrame === "function") cancelAnimationFrame(autoScrollRAF);
+    autoScrollRAF = null;
+  }
 
   /* Generic editable string-list field: rows of text inputs (or textareas)
      with drag&drop reorder, per-row remove and an add button.
@@ -344,7 +434,8 @@
       field.appendChild(label);
     }
 
-    var list = el("div", "entry-list");
+    var list = el("div", "entry-list",
+      { "data-list-id": cfg.listId, "data-group": cfg.group });
     var inputSel = cfg.multiline ? "textarea" : "input";
     var canReceive = cfg.canReceive || function () { return true; };
 
@@ -354,41 +445,6 @@
     function updateAddState() {
       add.disabled = cfg.getArray().some(function (v) { return !String(v).trim(); });
     }
-    function accepts() {
-      return dragState && dragState.group === cfg.group &&
-        (dragState.listId === cfg.listId || canReceive());
-    }
-    /* Reset all transient drag visuals (called on dragend). */
-    function clearDragCues() {
-      dragState = null;
-      document.body.classList.remove("dnd-" + cfg.group);
-      document.querySelectorAll(".entry-row.dragging, .entry-row.drop-before, .entry-row.drop-after")
-        .forEach(function (r) { r.classList.remove("dragging", "drop-before", "drop-after"); });
-      document.querySelectorAll(".entry-list.drop-active")
-        .forEach(function (l) { l.classList.remove("drop-active"); });
-    }
-    /* Move the dragged item to `targetIndex` in this list (reorder or, for a
-       different source list of the same group, a cross-list move). */
-    function performDrop(targetIndex) {
-      var src = entryLists[dragState.listId], dst = entryLists[cfg.listId];
-      if (!src || !dst || src.group !== dst.group) return;
-      if (dragState.listId === cfg.listId) {
-        var arr = dst.getArray(), from = dragState.index;
-        if (from < 0 || from >= arr.length) return;
-        if (targetIndex > from) targetIndex--;
-        if (targetIndex === from) return;
-        arr.splice(targetIndex, 0, arr.splice(from, 1)[0]);
-        dst.redraw();
-      } else {
-        if (!dst.canReceive()) return;
-        var item = src.getArray().splice(dragState.index, 1)[0];
-        if (item === undefined) return;
-        dst.getArray().splice(targetIndex, 0, item);
-        src.redraw();
-        dst.redraw();
-      }
-      scheduleSave();
-    }
 
     function draw() {
       list.innerHTML = "";
@@ -396,20 +452,38 @@
       arr.forEach(function (val, i) {
         var row = el("div", "entry-row");
 
-        var grip = el("span", "entry-drag",
-          { draggable: "true", title: cfg.dragLabel, "aria-hidden": "true" });
+        var grip = el("span", "entry-drag", { title: cfg.dragLabel, "aria-hidden": "true" });
         grip.textContent = "⠿";
-        grip.addEventListener("dragstart", function (e) {
+        grip.addEventListener("pointerdown", function (e) {
+          if (e.button != null && e.button > 0) return;  // primary button / touch only
+          e.preventDefault();
           dragState = { listId: cfg.listId, index: i, group: cfg.group };
-          if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = "move";
-            try { e.dataTransfer.setData("text/plain", String(i)); } catch (_) {}
-          }
           row.classList.add("dragging");
-          // Reveal empty same-group lists as drop zones while dragging.
-          document.body.classList.add("dnd-" + cfg.group);
+          document.body.classList.add("dnd-" + cfg.group); // reveal empty drop zones
+          lastPointerY = e.clientY;
+          startAutoScroll();
+          var pointerId = e.pointerId;
+          try { if (grip.setPointerCapture) grip.setPointerCapture(pointerId); } catch (_) {}
+          var pending = null;
+          function onMove(ev) {
+            lastPointerY = ev.clientY;
+            pending = resolveTarget(ev.clientX, ev.clientY);
+            paintCues(pending);
+          }
+          function finish(apply) {
+            grip.removeEventListener("pointermove", onMove);
+            grip.removeEventListener("pointerup", onUp);
+            grip.removeEventListener("pointercancel", onCancel);
+            try { if (grip.releasePointerCapture) grip.releasePointerCapture(pointerId); } catch (_) {}
+            if (apply && pending) moveEntry(pending.listId, pending.index);
+            clearDragCues();
+          }
+          function onUp() { finish(true); }
+          function onCancel() { finish(false); }
+          grip.addEventListener("pointermove", onMove);
+          grip.addEventListener("pointerup", onUp);
+          grip.addEventListener("pointercancel", onCancel);
         });
-        grip.addEventListener("dragend", clearDragCues);
 
         var input = el(inputSel, "entry-input");
         if (cfg.multiline) input.setAttribute("rows", "1");
@@ -440,27 +514,6 @@
           draw();
         });
 
-        row.addEventListener("dragover", function (e) {
-          if (!accepts()) return;
-          e.preventDefault();
-          if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-          var rect = row.getBoundingClientRect();
-          var after = (e.clientY - rect.top) > rect.height / 2;
-          row.classList.toggle("drop-after", after);
-          row.classList.toggle("drop-before", !after);
-        });
-        row.addEventListener("dragleave", function () {
-          row.classList.remove("drop-before", "drop-after");
-        });
-        row.addEventListener("drop", function (e) {
-          if (!accepts()) return;
-          e.preventDefault();
-          var rect = row.getBoundingClientRect();
-          var after = (e.clientY - rect.top) > rect.height / 2;
-          row.classList.remove("drop-before", "drop-after");
-          performDrop(i + (after ? 1 : 0));
-        });
-
         row.appendChild(grip);
         row.appendChild(input);
         row.appendChild(remove);
@@ -487,24 +540,6 @@
     draw();
     field.appendChild(list);
     field.appendChild(add);
-
-    // Dropping on empty list space (e.g. a character with no allies yet)
-    // appends to the end; highlight it as a drop zone while hovering.
-    list.addEventListener("dragover", function (e) {
-      if (!accepts() || e.target !== list) return;
-      e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-      list.classList.add("drop-active");
-    });
-    list.addEventListener("dragleave", function (e) {
-      if (e.target === list) list.classList.remove("drop-active");
-    });
-    list.addEventListener("drop", function (e) {
-      if (!accepts() || e.target !== list) return;
-      e.preventDefault();
-      list.classList.remove("drop-active");
-      performDrop(cfg.getArray().length);
-    });
 
     entryLists[cfg.listId] = {
       group: cfg.group, getArray: cfg.getArray, canReceive: canReceive, redraw: draw,

@@ -23,8 +23,9 @@ Läuft komplett im Browser, ganz ohne Server, und ist auf **GitHub Pages** gehos
   Modifikatoren-Auswahl: Einträge werden explizit hinzugefügt und entfernt
   (Notizen/Änderungen mehrzeilig, wachsen automatisch mit). Ein neuer Eintrag lässt sich erst
   anlegen, wenn der vorige gefüllt ist; ein geleerter Eintrag wird beim Verlassen entfernt.
-  Reihenfolge per Drag & Drop; Verbündete lassen sich per Drag & Drop zu einem anderen
-  (gesetzten) Charakter ziehen – auch auf einen Charakter, der noch keine Verbündeten hat.
+  Reihenfolge per Drag & Drop (am Griff ⠿, funktioniert auch auf Touch-Geräten); Verbündete
+  lassen sich zu einem anderen (gesetzten) Charakter ziehen – auch auf einen Charakter, der
+  noch keine Verbündeten hat.
 - **Automatisches Speichern** im Browser (`localStorage`) – nichts verlässt dein Gerät.
 - **Mehrere Logs** parallel verwalten, umbenennen, löschen.
 - **Export / Import** als `.json`-Datei zur Sicherung oder Übertragung zwischen Geräten.

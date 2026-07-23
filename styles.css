@@ -223,17 +223,22 @@ textarea.entry-input { resize: none; overflow: hidden; min-height: 2.6rem; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.3rem;
+  width: 1.8rem;
   min-height: 1.9rem;
   color: var(--text-dim);
   cursor: grab;
   user-select: none;
-  font-size: 0.95rem;
+  -webkit-user-select: none;
+  touch-action: none;        /* drag from the grip instead of scrolling */
+  font-size: 1.05rem;
   line-height: 1;
   border-radius: 6px;
 }
 .entry-drag:hover { color: var(--accent-strong); }
 .entry-drag:active { cursor: grabbing; }
+
+/* Suppress text selection while a drag is in progress. */
+body[class*="dnd-"] { user-select: none; -webkit-user-select: none; }
 
 .entry-remove {
   flex: 0 0 auto;
